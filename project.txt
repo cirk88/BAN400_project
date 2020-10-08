@@ -1,4 +1,4 @@
-Project suggestion
+Project suggestion Group 30
 
 Textual data analysis combined with regression analysis using data on fake/true news
 
@@ -13,3 +13,8 @@ For this we will use a data set from Kaggle: https://www.kaggle.com/clmentbisail
 (Links to an external site.) with data from 2016 to 2017.
 
 All graphs will be visualized using ggplot package.
+
+ - Use machine learning
+ - Apply it to live data
+ 
+https://www.r-bloggers.com/2020/10/sentiment-analysis-in-r-with-custom-lexicon-dictionary-using-tidytext/
