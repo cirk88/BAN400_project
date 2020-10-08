@@ -1,3 +1,4 @@
+# Loading packages
 
 library(tidyverse)
 
@@ -8,7 +9,6 @@ library(tidyverse)
 
 # df_fake <- saveRDS(df_fake, "Fake.rds")
 # df_true <- saveRDS(df_true, "True.rds")
-
 
 df_fake <- readRDS("Fake.rds")
 df_true <- readRDS("True.rds")
