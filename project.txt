@@ -1,0 +1,15 @@
+Project suggestion
+
+Textual data analysis combined with regression analysis using data on fake/true news
+
+Analysis:
+
+ - Sentiment analysis to gather data on how negative /positive the fake news is compared with true news.
+ - Doing a word count for specific words.
+ - Run a regression, were 1 is fake news and 0 is true news
+ - Maybe a time series analysis.
+
+For this we will use a data set from Kaggle: https://www.kaggle.com/clmentbisaillon/fake-and-real-news-dataset 
+(Links to an external site.) with data from 2016 to 2017.
+
+All graphs will be visualized using ggplot package.
