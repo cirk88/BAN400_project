@@ -1,6 +1,8 @@
 Project suggestion Group 30
 
-Textual data analysis combined with regression analysis using data on fake/true news
+Initial proposal: 
+
+"Textual data analysis combined with regression analysis using data on fake/true news
 
 Analysis:
 
@@ -17,18 +19,36 @@ All graphs will be visualized using ggplot package.
  - Use machine learning
  - Apply it to live data
  
-https://www.r-bloggers.com/2020/10/sentiment-analysis-in-r-with-custom-lexicon-dictionary-using-tidytext/
-
-
-
-
-
-
-
-
-
-
+https://www.r-bloggers.com/2020/10/sentiment-analysis-in-r-with-custom-lexicon-dictionary-using-tidytext/"
 
 
 https://rstudio-education.github.io/tidyverse-cookbook/import.html
 https://www.tidyverse.org/blog/2020/06/recipes-0-1-13/
+
+
+Workflow: 
+
+1. get the data to run in R and tidyverse
+
+  -1.1 sepparate the data into training and test data. 
+
+  -1.2 make sure that the data is randomly sampled and that the recipe will work nicely on the test aswell as it will on the training data. 
+
+2. Getting the data ready for modelling. 
+
+  -2.1 cleaning the words, and making them ready for the sensitivy analysis(making a frequency list)
+  
+    -2.1.1 Use recipes in order to make this cleaning process             replicable for test data 
+
+
+  -2.2 Using the sensitivity analysis to make usable columns in a tibble for each news article. 
+
+  -2.3 gathering all the data into one tibble, which we'll use to train our machine learning model. 
+
+3. Training the machine learning model
+
+4. Test the model, and polish it (maybe go back to step 2 if need be)
+
+5. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
+
+  5.1 make the app more user friendly
