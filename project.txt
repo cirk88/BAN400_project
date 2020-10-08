@@ -18,3 +18,17 @@ All graphs will be visualized using ggplot package.
  - Apply it to live data
  
 https://www.r-bloggers.com/2020/10/sentiment-analysis-in-r-with-custom-lexicon-dictionary-using-tidytext/
+
+
+
+
+
+
+
+
+
+
+
+
+https://rstudio-education.github.io/tidyverse-cookbook/import.html
+https://www.tidyverse.org/blog/2020/06/recipes-0-1-13/
