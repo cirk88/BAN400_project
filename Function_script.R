@@ -1,3 +1,7 @@
+#setting the working directory to the project file ----
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
 # Loading packages----
 
 library(tidyverse)
@@ -13,7 +17,7 @@ library(tidyverse)
 
 
 
-# Loading in the data, and binding them together ----
+# Loading in the data, binding them together and removing the unbinded to keep environment clean----
 
 df_fake <- readRDS("Fake.rds") %>%
   mutate(Fake = 1)
@@ -22,4 +26,10 @@ df_fake <- readRDS("Fake.rds") %>%
 df_true <- readRDS("True.rds") %>% 
   mutate(Fake = 0)
 
+
+DF <- rbind(df_fake, df_true)
+
+rm(df_true, df_fake)
+
+# Separating the data into test and training ----
 
