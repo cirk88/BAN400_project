@@ -1,0 +1,61 @@
+---
+title: "Group final project - BAN400 fall 2020 "
+author: "Candidate: (...)"
+date: "6/11/2020"
+output:
+  pdf_document:
+    dev: png
+  keep_tex: yes
+  word_document: default
+header-includes:
+- \usepackage{dcolumn}
+- \usepackage{booktabs}
+- \usepackage{sectsty} \sectionfont{\centering}
+- \usepackage{indentfirst}
+fontsize: 11pt
+spacing: double
+indent: true
+---
+
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+options(scipen = 99999) # Do not wish to have scientific  notations.
+
+# loading the required packages:
+
+library(tidyverse)
+library(parsnip)
+library(yardstick)
+library(rsample)
+require(parallel)
+library(recipes)
+library(ggridges)
+library(ggplot2)
+library(patchwork)
+library(xgboost)
+library(tidymodels)
+
+theme_set(theme_classic())
+```
+
+
+\tableofcontents
+
+\pagebreak
+```{r pressure, echo=FALSE}
+
+# Loading in the data, binding them together and removing the unbinded to keep environment clean----
+
+df_fake <- readRDS("Fake.rds") %>%
+  mutate(Fake = 1)
+
+
+df_true <- readRDS("True.rds") %>% 
+  mutate(Fake = 0)
+
+
+DF <- rbind(df_fake, df_true)
+
+rm(df_true, df_fake)
+```
