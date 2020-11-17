@@ -4,12 +4,24 @@ Initial proposal:
 
 "Textual data analysis combined with regression analysis using data on fake/true news
 
+Method: 
+
+- We create regressors based on the words present in the fake and real news. So far we can create a sentiment factor, on both the body and the title of the article, and a keyword per word factor, also both on the title and the body. 
+ 
+- Then use a predictive model to see if the news are real or fake based on these factors. We can run a factor regression or perhaps a machine learning model, like an XGBoost model.
+
+- Finally, we can create a "shiny ap" which allows up to paste news articles in, the ap will then preprocess the article and give us a score of "fake probability". 
+
 Analysis:
 
- - Sentiment analysis to gather data on how negative /positive the fake news is compared with true news.
- - Doing a word count for specific words.
- - Run a regression, were 1 is fake news and 0 is true news
- - Maybe a time series analysis.
+ - Tokenizing and prepossesing before doing any textual analysis, we need to preposess the data, which mean shaping it in order for the different models to read them. 
+
+ - Topic modelling: Using the words in the dataset to define a concrete topic in each of the files. This could help us see which words to look out for, perhaps there is a topic which is "Hype up words", that might be more present in the fake news. We can create a "topic per word" score. 
+ 
+ - Sentiment analysis to gather data on how negative /positive the fake news is compared with true news. Maybe there is a specific sentiment in the fake news that we can extract, we can add these numbers to our regression, to make a predictive model to see if the news are fake or not. 
+ 
+ - Run a regression, were 1 is fake news and 0 is true news. It could be a linear regression, or we could experiment with some machine learning model. We keep whichever performs best. 
+
 
 For this we will use a data set from Kaggle: https://www.kaggle.com/clmentbisaillon/fake-and-real-news-dataset 
 (Links to an external site.) with data from 2016 to 2017.
