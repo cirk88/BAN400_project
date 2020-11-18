@@ -29,7 +29,7 @@ library(tidyverse)
 library(parsnip)
 library(yardstick)
 library(rsample)
-require(parallel)
+require(doParallel)
 library(recipes)
 library(ggridges)
 library(ggplot2)
@@ -43,6 +43,7 @@ library(tidytext)
 require(sentimentr)
 library(SentimentAnalysis)
 library(lexicon)
+require(tokenizers)
 
 ```
 
@@ -168,81 +169,25 @@ train <-  train %>%
 
 ```
 
----- **Tokenizing the data and creating bigrans** ----
+---- **Tokenizing the data and creating bigrams** ----
 
 > Here we will split the data word by word. We will do the analysis with unigrams (which is every word separated individually), and bigrams (which are words separated in twos). They may give us slightly different topics, though should be somewhat similar, so its important to check for overfitting if using both in a regression. 
 
 ```{r}
+# Tokenizing
+
+# Tokenizing with bigrams. What this does to us, is that as bigrams, words carry a different meaning as the paired words may carry a different meaning. 
+
+train <-  train %>% 
+  mutate(bigram_text = tokenize_ngrams(text , n = 2, ngram_delim = "_"),
+         bigram_title = tokenize_ngrams(title , n = 2, ngram_delim = "_"),
+         token_text = tokenize_ngrams(text , n = 1, ngram_delim = ""),
+         token_title = tokenize_ngrams(title , n = 1, ngram_delim = ""))
 
 
 
 ```
 
-
-
----- **Making a KWIC table** ----
-
-> *this helps us better visualize the text in hand before making a topic analysis*
-
-```{r}
-
-# extracting all the words from our training data to create the topic modeling
-
-train_all_text <- paste(c(train$text), collapse = " ")
-
-train_all_titles <- paste(c(train$title), collapse = " ")
-
-# splitting the words and tokenizing them.
-
-train_text_tokens <- scan(text = train_all_text,
-                      what = "character",
-                      quote = "")
-
-train_titles_tokens <- scan(text = train_all_titles,
-                      what = "character",
-                      quote = "")
-
-# Getting a KWIC matrix
-# Here we build the function "get.KWIC" in order to inspect keywords. The KWIC matrix helps us identify keywords and the words related to it in our corpus. It aids in visualizing the data. 
-
-### building the function ###
-
-get.KWIC <- function(keyword,
-                     n,
-                     tokenized_text){
-  # this helps us seek the keyword
-  index.env <- grep(keyword, tokenized_text)
-  
-  # this creates the table for us as a tibble. 
-  KWIC <- tibble(left = sapply(index.env,
-                               function(i) {ifelse( i-n >0,
-                                 paste(tokenized_text[i-n:1],
-                                                  collapse = " "),NA)}),
-                 keyword = tokenized_text[index.env],
-                 right = sapply(index.env,
-                                function(i) {paste(tokenized_text[i+1:n],
-                                                   collapse = " ")}))
-  # return
-  return(KWIC)
-}
-
-### using the function ###
-
-get.KWIC(keyword = "leftist",
-         n = 3,
-         tokenized_text = train_text_tokens) -> leftist
-
-get.KWIC(keyword = "trump",
-         n = 3,
-         tokenized_text = train_text_tokens) -> trump
-
-## we just picked these topics since they are polarizing, but they are only here as an example of the function at work ##
-
-head (leftist,15)
-
-head(trump, 15)
-
-```
 
 
 #### 2.1 cleaning the words, and making them ready for the sensitivy analysis(making a frequency list)
@@ -259,42 +204,199 @@ head(trump, 15)
 ```
 
 
-#### 2.2 Using the sensitivity analysis to make usable columns in a tibble for each news article. 
+### 3 Visualizing the data
+
+*splitting the clean data back into true and false for the visualization*
+
+```{r}
+
+f.train <- train  %>% filter(train$Fake == 1)
+
+t.train <- train  %>% filter(train$Fake == 0)
+
+
+# extracting all the words from our training data to create the topic modeling
+
+f.all_text <- paste(c(f.train$text), collapse = " ")
+
+f.all_title <- paste(c(f.train$title), collapse = " ")
+
+t.all_text <- paste(c(t.train$text), collapse = " ")
+
+t.all_title <- paste(c(t.train$title), collapse = " ")
+
+# splitting the words and tokenizing them.
+
+f.text_tokens <- scan(text = f.all_text,
+                      what = "character",
+                      quote = "")
+
+f.title_tokens <- scan(text = f.all_title,
+                      what = "character",
+                      quote = "")
+
+f.text_bigrams <- paste(unlist(f.train$bigram_text), collapse = " ") %>% 
+  strsplit(.," ") %>% unlist
+
+f.title_bigrams <- paste(unlist(f.train$bigram_title), collapse = " ") %>% 
+  strsplit(.," ") %>%  unlist
+
+t.text_tokens <- scan(text = t.all_text,
+                      what = "character",
+                      quote = "")
+
+t.title_tokens <- scan(text = t.all_title,
+                      what = "character",
+                      quote = "")
+
+t.text_bigrams <- paste(unlist(t.train$bigram_text), collapse = " ") %>% 
+  strsplit(.," ") %>% unlist
+
+t.title_bigrams <- paste(unlist(t.train$bigram_title), collapse = " ") %>% 
+  strsplit(.," ") %>%  unlist
+  
+
+```
+#### 3.1 Making a KWIC (Key words in context) table
+
+> *this helps us better visualize the text and understand the context of some words*
+
+
+```{r}
+
+
+# Getting a KWIC matrix
+# Here we build the function "get.KWIC" in order to inspect keywords. The KWIC matrix helps us identify keywords and the words related to it in our corpus. It aids in visualizing the data. 
+
+### building the function ###
+
+get.KWIC <- function(keyword,
+                     n,
+                     tokenized_text,
+                     cores){
+  cores <- min(detectCores(), cores)
+  cl <- makeCluster(cores)
+  registerDoParallel(cl)
+  
+  # this helps us seek the keyword
+  index.env <- grep(keyword, tokenized_text)
+  
+  
+  # this creates the table for us as a tibble. 
+  KWIC <- tibble(left = parSapply(cl, index.env,
+                               function(i) {ifelse( i-n >0,
+                                 paste(tokenized_text[i-n:1],
+                                                  collapse = " "),NA)}),
+                 keyword = tokenized_text[index.env],
+                 right = parSapply(cl, index.env,
+                                function(i) {paste(tokenized_text[i+1:n],
+                                                   collapse = " ")}))
+  
+  stopCluster(cl)
+  # return
+  return(KWIC)
+
+}
+
+
+```
+
+
+
+```{r}
+
+
+### using the function ###
+
+get.KWIC(keyword = "trump",
+         n = 2,
+         tokenized_text = f.text_tokens, 8) -> f.trump
+
+get.KWIC(keyword = "donald_trump",
+         n = 2,
+         tokenized_text = f.text_bigrams, 8) -> f.trump_bigram
+
+get.KWIC(keyword = "trump",
+         n = 2,
+         tokenized_text = t.text_tokens, 8) -> t.trump
+
+get.KWIC(keyword = "donald_trump",
+         n = 2,
+         tokenized_text = t.text_bigrams, 8) -> t.trump_bigram
+
+## we just picked these topics since they are polarizing, but they are only here as an example of the function at work ##
+
+
+
+```
+
+#### 3.2 Visualizing word frequency
+
+```{r}
+
+#making frequency tables out of the fake news
+
+f.freq_text_1 <- as.data.frame(table(f.text_tokens))%>% 
+  sort(decreasing = T)
+
+f.freq_text_2 <- as.data.frame(table(f.text_bigrams))%>% 
+  sort(decreasing = T)
+
+f.freq_title_1 <- as.data.frame(table(f.title_tokens))%>% 
+  sort(decreasing = T)
+
+f.freq_title_2 <- as.data.frame(table(f.title_bigrams))%>% 
+  sort(decreasing = T)
+
+#making frequency tables out of the true news
+
+t.freq_text_1 <- as.data.frame(table(t.text_tokens))%>% 
+  sort(decreasing = T)
+
+t.freq_text_2 <- as.data.frame(table(t.text_bigrams))%>% 
+  sort(decreasing = T)
+
+t.freq_title_1 <- as.data.frame(table(t.title_tokens))%>% 
+  sort(decreasing = T)
+
+t.freq_title_2 <- as.data.frame(table(t.title_bigrams))%>% 
+  sort(decreasing = T)
+
+
+```
+
+
+
+### 4. Using the sensitivity analysis to make usable columns in a tibble for each news article. 
 
 ```{r}
 
 ```
 
 
-#### 2.3 gathering all the data into one tibble, which we'll use to train our machine learning model. 
+
+### 5. Training the machine learning model
 
 ```{r}
 
 ```
 
 
-### 3. Training the machine learning model
+### 6. Test the model, and polish it (maybe go back to step 2 if need be)
 
 ```{r}
 
 ```
 
 
-### 4. Test the model, and polish it (maybe go back to step 2 if need be)
+### 7. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
 
 ```{r}
 
 ```
 
 
-### 5. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
-
-```{r}
-
-```
-
-
-####  5.1 make the app more user friendly
+####  7.1 make the app more user friendly
 
 ```{r}
 
