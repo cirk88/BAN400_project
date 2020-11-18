@@ -117,35 +117,11 @@ DF <- rbind(df_fake, df_true)
 
 rm(df_true, df_fake)
 
-```
 
-#### 1.1 separate the data into training and test data.
-
-```{r}
-
-# Setting a seed so the experiment is replicable
-
-set.seed(10)
-
-# Creating test and train data:
-
-sample <- initial_split(DF,
-                           strata = Fake, # variable used for stratified sampling
-                           prop = 0.75)# We are splitting 75% training and 25% test.
-
-# Extracting the training data: 
-
-train<-training(sample)
-
-# Extracting the test data:
-
-test<-testing(sample)
 
 ```
 
-
-### 2. Prepossesing and getting the data ready for modelling. 
-
+#### 1.1 Prepossesing and getting the data ready for modelling. 
 
 ---- **Cleaning the data** ----
 
@@ -153,7 +129,21 @@ test<-testing(sample)
 
 ```{r}
 
-train <-  train %>% 
+# First we'd like to extract a few variables which we might use on our predictive models
+
+DF <- DF %>% 
+  mutate(w_count.txt = str_count(paste(DF$text), " "),
+         punct_count.txt = str_count(paste(DF$text), "[[:punct:]]"),
+         exclamation_count.txt = str_count(paste(DF$text), "!"), 
+         w_count.title = str_count(paste(DF$title), " "),
+         punct_count.title = str_count(paste(DF$title), "[[:punct:]]"),
+         exclamation_count.title = str_count(paste(DF$title), "!"))
+
+
+
+# Now we do some prepossessing of the data
+
+DF <-  DF %>% 
   mutate(text = text %>% tolower() %>%
              gsub("[^[:alpha:]]", " ", .) %>%
 #this removes any character that's not alphabetic. Those usually not carry any meaning. We may want to analyse them individually.
@@ -178,7 +168,7 @@ train <-  train %>%
 
 # Tokenizing with bigrams. What this does to us, is that as bigrams, words carry a different meaning as the paired words may carry a different meaning. 
 
-train <-  train %>% 
+DF <-  DF %>% 
   mutate(bigram_text = tokenize_ngrams(text , n = 2, ngram_delim = "_"),
          bigram_title = tokenize_ngrams(title , n = 2, ngram_delim = "_"),
          token_text = tokenize_ngrams(text , n = 1, ngram_delim = ""),
@@ -190,16 +180,28 @@ train <-  train %>%
 
 
 
-#### 2.1 cleaning the words, and making them ready for the sensitivy analysis(making a frequency list)
+### 2. Separate the data into training and test data.
+
 
 ```{r}
 
-```
+# Setting a seed so the experiment is replicable
 
+set.seed(10)
 
-#### 2.1.1 Use recipes in order to make this cleaning process             replicable for test data 
+# Creating test and train data:
 
-```{r}
+sample <- initial_split(DF,
+                           strata = Fake, # variable used for stratified sampling
+                           prop = 0.75)# We are splitting 75% training and 25% test.
+
+# Extracting the training data: 
+
+train<-training(sample)
+
+# Extracting the test data:
+
+test<-testing(sample)
 
 ```
 
@@ -336,31 +338,39 @@ get.KWIC(keyword = "donald_trump",
 
 #making frequency tables out of the fake news
 
-f.freq_text_1 <- as.data.frame(table(f.text_tokens))%>% 
-  sort(decreasing = T)
+f.freq_text_1 <- table(f.text_tokens)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
-f.freq_text_2 <- as.data.frame(table(f.text_bigrams))%>% 
-  sort(decreasing = T)
+f.freq_text_2 <- table(f.text_bigrams)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
-f.freq_title_1 <- as.data.frame(table(f.title_tokens))%>% 
-  sort(decreasing = T)
+f.freq_title_1 <- table(f.title_tokens)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
-f.freq_title_2 <- as.data.frame(table(f.title_bigrams))%>% 
-  sort(decreasing = T)
+f.freq_title_2 <- table(f.title_bigrams)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
 #making frequency tables out of the true news
 
-t.freq_text_1 <- as.data.frame(table(t.text_tokens))%>% 
-  sort(decreasing = T)
+t.freq_text_1 <- table(t.text_tokens)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
-t.freq_text_2 <- as.data.frame(table(t.text_bigrams))%>% 
-  sort(decreasing = T)
+t.freq_text_2 <- table(t.text_bigrams)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
-t.freq_title_1 <- as.data.frame(table(t.title_tokens))%>% 
-  sort(decreasing = T)
+t.freq_title_1 <- table(t.title_tokens)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
-t.freq_title_2 <- as.data.frame(table(t.title_bigrams))%>% 
-  sort(decreasing = T)
+t.freq_title_2 <- table(t.title_bigrams)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
 
 
 ```
