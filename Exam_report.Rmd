@@ -375,7 +375,50 @@ t.freq_title_2 <- table(t.title_bigrams)%>%
 
 ```
 
+**Fake News word frequency**
 
+```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+
+#Making wordclouds of our training data
+
+require(wordcloud)
+
+
+wordcloud(words = f.freq_text_1$f.text_tokens [1:50],
+          freq = f.freq_text_1$Freq[1:50])
+
+```
+**True News word frequency**
+
+```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+
+wordcloud(words = t.freq_text_1$t.text_tokens [1:50],
+          freq = t.freq_text_1$Freq[1:50])
+
+
+```
+
+**Fake News bigram frequency**
+
+```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+
+wordcloud(words = f.freq_text_2$f.text_bigrams [1:50],
+          freq = f.freq_text_2$Freq[1:50])
+
+```
+
+**True News bigram frequency**
+
+```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+
+wordcloud(words = t.freq_text_2$t.text_bigrams [1:50],
+          freq = t.freq_text_2$Freq[1:50])
+
+```
+
+```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+
+```
 
 ### 4. Using the sensitivity analysis to make usable columns in a tibble for each news article. 
 
