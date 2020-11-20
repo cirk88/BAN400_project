@@ -29,13 +29,21 @@ library(tidyverse)
 library(parsnip)
 library(yardstick)
 library(rsample)
-require(parallel)
+require(doParallel)
 library(recipes)
 library(ggridges)
 library(ggplot2)
 library(patchwork)
 library(xgboost)
 library(tidymodels)
+library(FactoMineR)
+library(tibble)
+library(tm)
+library(tidytext)
+require(sentimentr)
+library(SentimentAnalysis)
+library(lexicon)
+require(tokenizers)
 
 ```
 
@@ -85,6 +93,8 @@ https://rstudio-education.github.io/tidyverse-cookbook/import.html
 https://www.tidyverse.org/blog/2020/06/recipes-0-1-13/
 
 
+*check out vip package 
+
 ## Workflow: 
 
 ### 1. get the data to run in R and tidyverse
@@ -107,9 +117,126 @@ DF <- rbind(df_fake, df_true)
 
 rm(df_true, df_fake)
 
+
+
 ```
 
-#### 1.1 separate the data into training and test data.
+#### 1.1 Prepossesing and getting the data ready for modelling. 
+
+---- **Cleaning the data** ----
+
+> Here we do some simple prepossesing steps, like removing characters and words that don't carry any meaning to our analysis. 
+
+```{r}
+
+# First we'd like to extract a few variables which we might use on our predictive models
+
+DF <- DF %>% 
+  mutate(w_count.txt = str_count(paste(DF$text), " "),
+         punct_count.txt = str_count(paste(DF$text), "[[:punct:]]"),
+         exclamation_count.txt = str_count(paste(DF$text), "!"), 
+         w_count.title = str_count(paste(DF$title), " "),
+         punct_count.title = str_count(paste(DF$title), "[[:punct:]]"),
+         exclamation_count.title = str_count(paste(DF$title), "!"))
+
+
+
+# Now we do some prepossessing of the data
+
+DF <-  DF %>% 
+  mutate(text = text %>% tolower() %>%
+             gsub("[^[:alpha:]]", " ", .) %>%
+#this removes any character that's not alphabetic. Those usually not carry any meaning. We may want to analyse them individually.
+             gsub('\\b\\w{1,2}\\s|\\b\\w{21,}\\s','', .) %>%
+#removing words that are too small (from 1 or 2 letters and huge words, 21+ letters)
+             removeWords(., c(stopwords(kind = "en"))),
+# removing stopwords, which are words that are most common in the English language, yet carry no meaning. These are found inside the stopwords dictionary int he tm package
+         title = title %>% tolower() %>% 
+             gsub("[^[:alpha:]]", " ", .) %>% 
+             gsub('\\b\\w{1,2}\\s|\\b\\w{21,}\\s','', .) %>% 
+             removeWords(., c(stopwords(kind = "en"))))
+
+
+```
+
+---- **Tokenizing the data and creating bigrams** ----
+
+> Here we will split the data word by word. We will do the analysis with unigrams (which is every word separated individually), and bigrams (which are words separated in twos). They may give us slightly different topics, though should be somewhat similar, so its important to check for overfitting if using both in a regression. 
+
+```{r}
+# Tokenizing
+
+# Tokenizing with bigrams. What this does to us, is that as bigrams, words carry a different meaning as the paired words may carry a different meaning. 
+
+DF <-  DF %>% 
+  mutate(bigram_text = tokenize_ngrams(text , n = 2, ngram_delim = "_"),
+         bigram_title = tokenize_ngrams(title , n = 2, ngram_delim = "_"),
+         token_text = tokenize_ngrams(text , n = 1, ngram_delim = ""),
+         token_title = tokenize_ngrams(title , n = 1, ngram_delim = ""))
+
+
+
+```
+
+---- *Adding the sentiment score* ----
+
+```{r}
+
+#Sentiment Analysis
+
+# checking the dictionary we will be using for the sentiment analysis
+# first, lets create a frequency table to analyze our data. 
+
+
+
+# Then, we decided to choose: hash_sentiment_loughran_mcdonald for our analysis, from the lexicon package
+
+dictionary <- lexicon::
+dictionary.n <- dictionary%>% filter(dictionary$y < 0)
+dictionary.p <- dictionary%>% filter(dictionary$y > 0)
+
+#seeing which positive words are present
+
+positive_words <- df_freq %>%
+  filter(df_text_token %in% dictionary.p$x) %>%
+  arrange(desc(n)) %>% head(50)
+
+# seeing which negative words are present
+
+negative_words  <- df_freq %>%
+  filter(df_text_token %in% dictionary.n$x) %>%
+  arrange(desc(n)) %>% head(50)
+
+# Calculating the sentiment score for each observation, this function may take some time to run. 
+
+
+library(lexicon)
+library(sentimentr)
+library(parallel)
+
+sentiment.fun  <- function(x){
+  dictionary <- lexicon::hash_sentiment_loughran_mcdonald
+  out <- sentimentr::sentiment_by(sentimentr::sentiment(unlist(strsplit(x, split = " "))  ,polarity_dt = dictionary))
+  
+  out2 <- sum(out$ave_sentiment)/sum(out$word_count)
+  return(out2)
+}
+
+timesent <- proc.time
+
+cl <- parallel::makeCluster(CORES)
+
+# Parallel processing to make it go quicker
+
+sentiment<-as.vector(unlist(parallel::parLapply(cl, df$texts, sentiment.fun)))
+df$sentiment <-sentiment
+proc.time()-timesent->ptm
+
+```
+
+
+### 2. Separate the data into training and test data.
+
 
 ```{r}
 
@@ -133,70 +260,194 @@ test<-testing(sample)
 
 ```
 
+### 4. Using the sensitivity analysis to make usable columns in a tibble for each news article. 
 
-### 2. Prepossesing and getting the data ready for modelling. 
+
+### 5. Training the machine learning model
 
 ```{r}
 
+library(tidyverse)
+
+registerDoSEQ()
+
+# Select all variable we are using in our models
+
+model_train <- train %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+  mutate(Fake = as.factor(Fake))
+
+model_test <- test %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+  mutate(Fake = as.factor(Fake))
+
+
+library(caret)
 
 
 ```
 
 
-#### 2.1 cleaning the words, and making them ready for the sensitivy analysis(making a frequency list)
+
+```{r}
+
+
+
+# logistic reg
+
+set.seed(55)
+
+glm_mod <- train(
+  form = Fake ~ .,
+  data = model_train,
+  trControl = trainControl(method = "cv", number = 5),
+  method = "glm",
+  family = "binomial"
+)
+
+summary(glm_mod)
+
+
+```
+
+
+```{r}
+
+
+
+# Variable importance plot
+
+imp_lr <- varImp(glm_mod, scale = FALSE)
+
+plot(imp_lr)
+
+
+```
+
+
+```{r}
+
+
+# XGB
+
+# Set up tuning parameters
+xgb_grid <- expand.grid(nrounds = 2,
+                        max_depth = c(6,7,8,10),
+                        eta = c(0.1,0.2),
+                        gamma = c(0,0.1),
+                        colsample_bytree = 1,
+                        min_child_weight = 1,
+                        subsample = 1
+)
+set.seed(55)
+
+# Train model
+
+xgb_mod <- train(
+  form = Fake ~.,
+  data = model_train,
+  trControl = trainControl(method = "cv", number = 5),
+  method = "xgbTree",
+  tuneGrid = xgb_grid,
+  verbose = FALSE
+)
+
+# KNN
+
+set.seed(55)
+
+knn_mod <- train(
+  form = Fake ~.,
+  data = model_train,
+  method = "knn",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = expand.grid(k = seq(1,101, by = 2))
+)
+
+# GBM
+
+gbm_grid = expand.grid(interaction.depth = c(2, 3, 4),
+                       n.trees = c(200,400,600),
+                       shrinkage = c(0.1, 0,2, 0.3),
+                       n.minobsinnode = 15)
+
+set.seed(55)
+
+gbm_mod = train(
+  form = Fake ~ .,
+  data = model_train,
+  trControl = trainControl(method = "cv", number = 5),
+  method = "gbm",
+  tuneGrid = gbm_grid, 
+  verbose = FALSE
+)
+
+
+
+# Making nice table to print
+
+models <- list(glm_mod,gbm_mod,knn_mod,xgb_mod) # Making a list of all models
+
+# Make function
+
+summary_table <- function(models,testdata, var_of_interest){
+  
+  # making empty matrix to fill values  
+  
+  sum_tab <- matrix(0,length(models),5)  
+  
+  colnames(sum_tab) <- c("Methods", "Accuracy", "Kappa", "Sensitivity", "Specificity") 
+  
+  # Loop over all models
+  
+  for(i in 1:length(models)){  
+    
+    # Predict and make a confusion matrix 
+    
+    pred <- predict(models[[i]], testdata)
+    
+    cm <- confusionMatrix(pred, var_of_interest)
+    
+    # make a nice data table of the result
+    
+    sum_tab[i,1]<- models[[i]]$method
+    sum_tab[i,2]<- cm$overall[1]
+    sum_tab[i,3]<- cm$overall[2]
+    sum_tab[i,4]<- cm$byClass[1]
+    sum_tab[i,5]<- cm$byClass[2]
+    
+  }
+  
+  sum_tab
+  
+}
+
+sum_table <- summary_table(models, model_test, model_test$Fake)
+
+kableExtra::kable(sum_table)
+
+
+```
+
+
+### 6. Test the model, and polish it (maybe go back to step 2 if need be)
 
 ```{r}
 
 ```
 
 
-#### 2.1.1 Use recipes in order to make this cleaning process             replicable for test data 
+### 7. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
 
 ```{r}
 
 ```
 
 
-#### 2.2 Using the sensitivity analysis to make usable columns in a tibble for each news article. 
+####  7.1 make the app more user friendly
 
 ```{r}
 
 ```
-
-
-#### 2.3 gathering all the data into one tibble, which we'll use to train our machine learning model. 
-
-```{r}
-
-```
-
-
-### 3. Training the machine learning model
-
-```{r}
-
-```
-
-
-### 4. Test the model, and polish it (maybe go back to step 2 if need be)
-
-```{r}
-
-```
-
-
-### 5. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
-
-```{r}
-
-```
-
-
-####  5.1 make the app more user friendly
-
-```{r}
-
-```
-
 
 
