@@ -161,6 +161,50 @@ test<-testing(sample)
 
 ### 3 Visualizing the data
 
+
+*Visualizing the sentiment scores*
+
+```{r}
+
+# Creating a dataframe with all the words
+
+all_text <- paste(c(train$text), collapse = " ")
+
+#tokenizing all words
+
+text_tokens <- scan(text = all_text,
+                      what = "character",
+                      quote = "")
+
+#Making a frequency table of all words
+
+freq_text <- table(text_tokens)%>% 
+  sort(decreasing = T) %>% 
+  as.data.frame()
+
+# choosing the sentiment dictionary 
+
+dictionary <- lexicon::hash_sentiment_sentiword
+dictionary.n <- dictionary%>% filter(dictionary$y < 0)
+dictionary.p <- dictionary%>% filter(dictionary$y > 0)
+
+#seeing which positive words are present
+
+positive_words <- freq_text %>%
+  filter(text_tokens %in% dictionary.p$x) %>%
+  arrange(desc(Freq)) %>% head(50)
+
+# seeing which negative words are present
+
+negative_words <- freq_text %>%
+  filter(text_tokens %in% dictionary.n$x) %>%
+  arrange(desc(Freq)) %>% head(50)
+
+
+```
+
+
+
 *splitting the clean data back into true and false for the visualization*
 
 ```{r}

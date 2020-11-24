@@ -184,28 +184,6 @@ DF <-  DF %>%
 
 #Sentiment Analysis
 
-# checking the dictionary we will be using for the sentiment analysis
-# first, lets create a frequency table to analyze our data. 
-
-
-
-# Then, we decided to choose: hash_sentiment_loughran_mcdonald for our analysis, from the lexicon package
-
-dictionary <- lexicon::
-dictionary.n <- dictionary%>% filter(dictionary$y < 0)
-dictionary.p <- dictionary%>% filter(dictionary$y > 0)
-
-#seeing which positive words are present
-
-positive_words <- df_freq %>%
-  filter(df_text_token %in% dictionary.p$x) %>%
-  arrange(desc(n)) %>% head(50)
-
-# seeing which negative words are present
-
-negative_words  <- df_freq %>%
-  filter(df_text_token %in% dictionary.n$x) %>%
-  arrange(desc(n)) %>% head(50)
 
 # Calculating the sentiment score for each observation, this function may take some time to run. 
 
@@ -215,22 +193,22 @@ library(sentimentr)
 library(parallel)
 
 sentiment.fun  <- function(x){
-  dictionary <- lexicon::hash_sentiment_loughran_mcdonald
+  dictionary <- lexicon::hash_sentiment_sentiword
   out <- sentimentr::sentiment_by(sentimentr::sentiment(unlist(strsplit(x, split = " "))  ,polarity_dt = dictionary))
   
   out2 <- sum(out$ave_sentiment)/sum(out$word_count)
   return(out2)
 }
 
-timesent <- proc.time
+timespent <- proc.time
 
-cl <- parallel::makeCluster(CORES)
+cl <- parallel::makeCluster(6)
 
 # Parallel processing to make it go quicker
 
-sentiment<-as.vector(unlist(parallel::parLapply(cl, df$texts, sentiment.fun)))
-df$sentiment <-sentiment
-proc.time()-timesent->ptm
+sentiment<-as.vector(unlist(parallel::parLapply(cl, DF$token_text, sentiment.fun)))
+DF$sentiment <-sentiment
+proc.time()-timespent->ptm
 
 ```
 
