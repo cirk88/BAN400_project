@@ -307,9 +307,9 @@ get.KWIC <- function(keyword,
 
 ### using the function ###
 
-get.KWIC(keyword = "trump",
-         n = 2,
-         tokenized_text = f.text_tokens, 8) -> f.trump
+get.KWIC(keyword = "new",
+         n = 4,
+         tokenized_text = text_tokens, 8) -> new_context
 
 get.KWIC(keyword = "donald_trump",
          n = 2,

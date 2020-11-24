@@ -48,6 +48,17 @@ require(tokenizers)
 ```
 
 
+```{r}
+
+### IMPORTANT! ###
+
+#set the number of cores you will use for parallel calculation. Do not exceed the recommended amount.
+
+cl <- parallel::makeCluster(8)
+
+```
+
+
 \tableofcontents
 
 \pagebreak
@@ -119,6 +130,8 @@ rm(df_true, df_fake)
 
 
 
+
+
 ```
 
 #### 1.1 Prepossesing and getting the data ready for modelling. 
@@ -140,10 +153,11 @@ DF <- DF %>%
          exclamation_count.title = str_count(paste(DF$title), "!"))
 
 
-
 # Now we do some prepossessing of the data
 
-DF <-  DF %>% 
+DF <-  DF %>%
+  filter( w_count.title > 0 ) %>%
+  filter( w_count.txt > 30 ) %>% 
   mutate(text = text %>% tolower() %>%
              gsub("[^[:alpha:]]", " ", .) %>%
 #this removes any character that's not alphabetic. Those usually not carry any meaning. We may want to analyse them individually.
@@ -180,7 +194,7 @@ DF <-  DF %>%
 
 ---- *Adding the sentiment score* ----
 
-```{r}
+```{r, include= F}
 
 #Sentiment Analysis
 
@@ -200,18 +214,62 @@ sentiment.fun  <- function(x){
   return(out2)
 }
 
-timespent <- proc.time
 
-cl <- parallel::makeCluster(6)
+timestart <- Sys.time() #checking start time
+
 
 # Parallel processing to make it go quicker
 
 sentiment<-as.vector(unlist(parallel::parLapply(cl, DF$token_text, sentiment.fun)))
-DF$sentiment <-sentiment
-proc.time()-timespent->ptm
+
+Sys.time()-timestart->ptm  #checking how long it took the code to run
+
 
 ```
 
+
+```{r}
+
+
+DF$sentiment <-sentiment
+
+# fixing NaN 
+
+DF <- DF %>%
+  na.omit(DF$sentiment)
+
+
+```
+
+---- *Adding more predictors based on our visualization* ----
+
+```{r}
+
+#Searching for certain keywords
+
+#Politicians
+
+politicians <- "(president_donald)|(president_obama)|(president_trump)|(barack_obama)|(bernie_sanders)|(donald_trump)|(hillary_clinton)|(bill_clinton)|(ted_cruz)|(vladimir_putin)|(john_mccain)"  	
+ 
+
+# Creating a politician per word metric, using the bigrams
+
+DF$politician.pw <-
+  str_count(string = paste(DF$bigram_text),
+            pattern = politicians)/DF$w_count.txt
+
+#Media related bigrams
+
+media <- "(twitter_com)|(pic_twitter)|(getty_images)|(fox_news)|(social_media)|(fake_news)|(york_times)|(washington_post)|(mainstream_media)|(via_youtube)|(via_getty)|(via_video)|(facebook_page)|(youtube_com)|(abc_news)"
+
+# Creating a politician per word metric, using the bigrams
+
+DF$media.pw <-
+  str_count(string = paste(DF$bigram_text),
+            pattern = media)/DF$w_count.txt
+
+
+```
 
 ### 2. Separate the data into training and test data.
 
@@ -238,7 +296,14 @@ test<-testing(sample)
 
 ```
 
-### 4. Using the sensitivity analysis to make usable columns in a tibble for each news article. 
+### 4.  The previous steps may take a while to run, alternatively, we could load the data 
+
+```{r}
+
+
+
+```
+
 
 
 ### 5. Training the machine learning model
@@ -252,15 +317,14 @@ registerDoSEQ()
 # Select all variable we are using in our models
 
 model_train <- train %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, media.pw ) %>% 
   mutate(Fake = as.factor(Fake))
 
 model_test <- test %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, media.pw ) %>% 
   mutate(Fake = as.factor(Fake))
 
 
-library(caret)
 
 
 ```
@@ -269,7 +333,7 @@ library(caret)
 
 ```{r}
 
-
+library(caret)
 
 # logistic reg
 
