@@ -48,6 +48,16 @@ require(tokenizers)
 ```
 
 
+```{r}
+
+### IMPORTANT! ###
+
+#set the number of cores you will use for parallel calculation. Do not exceed the recommended amount.
+
+cl <- parallel::makeCluster(8)
+
+```
+
 \tableofcontents
 
 \pagebreak
@@ -134,16 +144,19 @@ rm(df_true, df_fake)
 DF <- DF %>% 
   mutate(w_count.txt = str_count(paste(DF$text), " "),
          punct_count.txt = str_count(paste(DF$text), "[[:punct:]]"),
+         upper_count.txt = str_count(paste(DF$text), "[[:upper:]]"),
          exclamation_count.txt = str_count(paste(DF$text), "!"), 
          w_count.title = str_count(paste(DF$title), " "),
          punct_count.title = str_count(paste(DF$title), "[[:punct:]]"),
+         upper_count.title = str_count(paste(DF$text), "[[:upper:]]"),
          exclamation_count.title = str_count(paste(DF$title), "!"))
-
 
 
 # Now we do some prepossessing of the data
 
-DF <-  DF %>% 
+DF <-  DF %>%
+  filter( w_count.title > 0 ) %>%
+  filter( w_count.txt > 30 ) %>% 
   mutate(text = text %>% tolower() %>%
              gsub("[^[:alpha:]]", " ", .) %>%
 #this removes any character that's not alphabetic. Those usually not carry any meaning. We may want to analyse them individually.
@@ -178,7 +191,96 @@ DF <-  DF %>%
 
 ```
 
+---- *Adding the sentiment score* ----
 
+> NOTE: adding the sentiment score takes a long time, (over 2 hours with 8 cores), the sentiment.rds file should have been included with this code, and it contains the data we get after we run the code. If you would prefer not to wait for the code to run, *skip the next chunk*. 
+
+```{r, include=FALSE, message=FALSE,include=FALSE, eval=FALSE}
+
+#Sentiment Analysis
+
+
+# Calculating the sentiment score for each observation, this function may take some time to run. 
+
+
+library(lexicon)
+library(sentimentr)
+library(parallel)
+
+sentiment.fun  <- function(x){
+  dictionary <- lexicon::hash_sentiment_sentiword
+  out <- sentimentr::sentiment_by(sentimentr::sentiment(unlist(strsplit(x, split = " "))  ,polarity_dt = dictionary))
+  
+  out2 <- sum(out$ave_sentiment)/sum(out$word_count)
+  return(out2)
+}
+
+
+timestart <- Sys.time() #checking start time
+
+
+# Parallel processing to make it go quicker
+
+sentiment<-as.vector(unlist(parallel::parLapply(cl, DF$token_text, sentiment.fun)))
+
+Sys.time()-timestart->ptm  #checking how long it took the code to run
+
+
+#The previous step takes a very long time to run (around 2 hours with 8 cores). Alternatively, you could just load the sentiment file, which has been run previously. 
+
+#first save the sentiment if you have ran the file already.
+
+
+saveRDS(sentiment, file = "sentiment.rds")
+
+```
+
+
+
+```{r}
+
+sentiment <- readRDS(file = "sentiment.rds")
+
+# Adding the sentiment score to our DF
+
+DF$sentiment <-sentiment
+
+# making sure there are no NA's left in the sentiment score. 
+
+DF <- DF %>%
+  na.omit(DF$sentiment)
+
+
+```
+
+---- *Adding more predictors based on our visualization* ----
+
+```{r}
+
+#Searching for certain keywords
+
+#Politicians relevant at the time
+
+politicians <- "(barack_obama)|(bernie_sanders)|(donald_trump)|(hillary_clinton)|(joe_biden)"  	
+ 
+
+# Creating a politician per word metric, using the bigrams
+
+DF$politician.pw <-
+  str_count(string = paste(DF$bigram_text),
+            pattern = politicians)/DF$w_count.txt
+
+#Media related bigrams
+
+media <- "(twitter_com)|(pic_twitter)|(getty_images)|(fox_news)|(social_media)|(fake_news)|(york_times)|(washington_post)|(mainstream_media)|(via_youtube)|(via_getty)|(via_video)|(facebook_page)|(youtube_com)|(abc_news)"
+
+# Creating a politician per word metric, using the bigrams
+
+DF$media.pw <-
+  str_count(string = paste(DF$bigram_text),
+            pattern = media)/DF$w_count.txt
+
+```
 
 ### 2. Separate the data into training and test data.
 
@@ -207,6 +309,8 @@ test<-testing(sample)
 
 
 ### 3 Visualizing the data
+
+> Here we have the steps we took to see how our data actually looked like. Since this data is filled with so much text, we used a Key words in context matrix to see specific words in the context of where they appear. We also can visuallize the frequency of the words in a wordcloud, to better understand what is being most spoke on in our dataset. 
 
 *splitting the clean data back into true and false for the visualization*
 
@@ -259,6 +363,7 @@ t.title_bigrams <- paste(unlist(t.train$bigram_title), collapse = " ") %>%
   
 
 ```
+
 #### 3.1 Making a KWIC (Key words in context) table
 
 > *this helps us better visualize the text and understand the context of some words*
@@ -388,6 +493,7 @@ wordcloud(words = f.freq_text_1$f.text_tokens [1:50],
           freq = f.freq_text_1$Freq[1:50])
 
 ```
+
 **True News word frequency**
 
 ```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
@@ -416,33 +522,27 @@ wordcloud(words = t.freq_text_2$t.text_bigrams [1:50],
 
 ```
 
-```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
 
-```
 
-### 4. Using the sensitivity analysis to make usable columns in a tibble for each news article. 
+### 4. Training the machine learning model
 
 ```{r}
 
-```
-
-
-
-### 5. Training the machine learning model
-
-```{r}
 library(tidyverse)
 
+registerDoSEQ()
 
 # Select all variable we are using in our models
 
 model_train <- train %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt  ) %>% 
   mutate(Fake = as.factor(Fake))
 
 model_test <- test %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt ) %>% 
   mutate(Fake = as.factor(Fake))
+
+
 ```
 
 
@@ -593,26 +693,9 @@ kableExtra::kable(sum_table)
 
 
 
-
-### 6. Test the model, and polish it (maybe go back to step 2 if need be)
-
-```{r}
-
-```
-
-
-### 7. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
+### 5. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
 
 ```{r}
 
 ```
-
-
-####  7.1 make the app more user friendly
-
-```{r}
-
-```
-
-
 
