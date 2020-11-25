@@ -129,9 +129,6 @@ DF <- rbind(df_fake, df_true)
 rm(df_true, df_fake)
 
 
-
-
-
 ```
 
 #### 1.1 Prepossesing and getting the data ready for modelling. 
@@ -194,6 +191,8 @@ DF <-  DF %>%
 
 ---- *Adding the sentiment score* ----
 
+> NOTE: adding the sentiment score takes a long time, (over 2 hours with 8 cores), the sentiment.rds file should have been included with this code, and it contains the data we get after we run the code. If you would prefer not to wait for the code to run, *skip the next chunk*. 
+
 ```{r, include= F}
 
 #Sentiment Analysis
@@ -225,15 +224,26 @@ sentiment<-as.vector(unlist(parallel::parLapply(cl, DF$token_text, sentiment.fun
 Sys.time()-timestart->ptm  #checking how long it took the code to run
 
 
+#The previous step takes a very long time to run (around 2 hours with 8 cores). Alternatively, you could just load the sentiment file, which has been run previously. 
+
+#first save the sentiment if you have ran the file already.
+
+
+saveRDS(sentiment, file = "sentiment.rds")
+
 ```
+
 
 
 ```{r}
 
+sentiment <- readRDS(file = "sentiment.rds")
+
+# Adding the sentiment score to our DF
 
 DF$sentiment <-sentiment
 
-# fixing NaN 
+# making sure there are no NA's left in the sentiment score. 
 
 DF <- DF %>%
   na.omit(DF$sentiment)
@@ -249,7 +259,7 @@ DF <- DF %>%
 
 #Politicians
 
-politicians <- "(president_donald)|(president_obama)|(president_trump)|(barack_obama)|(bernie_sanders)|(donald_trump)|(hillary_clinton)|(bill_clinton)|(ted_cruz)|(vladimir_putin)|(john_mccain)"  	
+politicians <- "(barack_obama)|(bernie_sanders)|(donald_trump)|(hillary_clinton)|(bill_clinton)|(ted_cruz)|(vladimir_putin)|(john_mccain)"  	
  
 
 # Creating a politician per word metric, using the bigrams
@@ -296,14 +306,6 @@ test<-testing(sample)
 
 ```
 
-### 4.  The previous steps may take a while to run, alternatively, we could load the data 
-
-```{r}
-
-
-
-```
-
 
 
 ### 5. Training the machine learning model
@@ -323,8 +325,6 @@ model_train <- train %>%
 model_test <- test %>% 
   select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, media.pw ) %>% 
   mutate(Fake = as.factor(Fake))
-
-
 
 
 ```
