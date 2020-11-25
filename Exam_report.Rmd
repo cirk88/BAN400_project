@@ -144,9 +144,11 @@ rm(df_true, df_fake)
 DF <- DF %>% 
   mutate(w_count.txt = str_count(paste(DF$text), " "),
          punct_count.txt = str_count(paste(DF$text), "[[:punct:]]"),
+         upper_count.txt = str_count(paste(DF$text), "[[:upper:]]"),
          exclamation_count.txt = str_count(paste(DF$text), "!"), 
          w_count.title = str_count(paste(DF$title), " "),
          punct_count.title = str_count(paste(DF$title), "[[:punct:]]"),
+         upper_count.title = str_count(paste(DF$text), "[[:upper:]]"),
          exclamation_count.title = str_count(paste(DF$title), "!"))
 
 
@@ -193,7 +195,7 @@ DF <-  DF %>%
 
 > NOTE: adding the sentiment score takes a long time, (over 2 hours with 8 cores), the sentiment.rds file should have been included with this code, and it contains the data we get after we run the code. If you would prefer not to wait for the code to run, *skip the next chunk*. 
 
-```{r, include= F}
+```{r, include=FALSE, message=FALSE,include=FALSE, eval=FALSE}
 
 #Sentiment Analysis
 
@@ -257,9 +259,9 @@ DF <- DF %>%
 
 #Searching for certain keywords
 
-#Politicians
+#Politicians relevant at the time
 
-politicians <- "(barack_obama)|(bernie_sanders)|(donald_trump)|(hillary_clinton)|(bill_clinton)|(ted_cruz)|(vladimir_putin)|(john_mccain)"  	
+politicians <- "(barack_obama)|(bernie_sanders)|(donald_trump)|(hillary_clinton)|(joe_biden)"  	
  
 
 # Creating a politician per word metric, using the bigrams
@@ -277,7 +279,6 @@ media <- "(twitter_com)|(pic_twitter)|(getty_images)|(fox_news)|(social_media)|(
 DF$media.pw <-
   str_count(string = paste(DF$bigram_text),
             pattern = media)/DF$w_count.txt
-
 
 ```
 
@@ -319,11 +320,11 @@ registerDoSEQ()
 # Select all variable we are using in our models
 
 model_train <- train %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, media.pw ) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt  ) %>% 
   mutate(Fake = as.factor(Fake))
 
 model_test <- test %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, media.pw ) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt ) %>% 
   mutate(Fake = as.factor(Fake))
 
 
@@ -337,7 +338,7 @@ library(caret)
 
 # logistic reg
 
-set.seed(55)
+set.seed(56)
 
 glm_mod <- train(
   form = Fake ~ .,
@@ -468,13 +469,6 @@ sum_table <- summary_table(models, model_test, model_test$Fake)
 
 kableExtra::kable(sum_table)
 
-
-```
-
-
-### 6. Test the model, and polish it (maybe go back to step 2 if need be)
-
-```{r}
 
 ```
 
