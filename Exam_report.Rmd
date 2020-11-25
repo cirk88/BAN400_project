@@ -108,7 +108,6 @@ https://www.tidyverse.org/blog/2020/06/recipes-0-1-13/
 df_fake <- readRDS("Fake.rds") %>%
   mutate(Fake = 1)
 
-
 df_true <- readRDS("True.rds") %>% 
   mutate(Fake = 0)
 
@@ -437,16 +436,18 @@ library(tidyverse)
 # Select all variable we are using in our models
 
 model_train <- train %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,
+         w_count.title,punct_count.title, exclamation_count.title) %>% 
   mutate(Fake = as.factor(Fake))
 
-model_test <- test %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title) %>% 
+model_test <- test %>%  
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,
+         w_count.title,punct_count.title, exclamation_count.title) %>%  
   mutate(Fake = as.factor(Fake))
 ```
 
 
-```{r}
+```{r, warning= FALSE}
 
 # Run logistic regression 
 
@@ -465,6 +466,7 @@ glm_mod <- train(
   method = "glm",
   family = "binomial"
 )
+
 ```
 
 
@@ -526,13 +528,12 @@ gbm_mod = train(
   verbose = FALSE
 )
 
-
-
 # Making nice table to print
 
 models <- list(gbm_mod,knn_mod,xgb_mod) # Making a list of all models
 
 saveRDS(models, "models.rds")
+
 
 ```
 
@@ -540,6 +541,7 @@ saveRDS(models, "models.rds")
 ```{r}
 
 models <- c(list(glm_mod), readRDS("models.rds"))
+
 
 # Variable importance plot
 
