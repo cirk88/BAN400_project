@@ -148,7 +148,7 @@ DF <- DF %>%
          exclamation_count.txt = str_count(paste(DF$text), "!"), 
          w_count.title = str_count(paste(DF$title), " "),
          punct_count.title = str_count(paste(DF$title), "[[:punct:]]"),
-         upper_count.title = str_count(paste(DF$text), "[[:upper:]]"),
+         upper_count.title = str_count(paste(DF$title), "[[:upper:]]"),
          exclamation_count.title = str_count(paste(DF$title), "!"))
 
 
@@ -327,7 +327,6 @@ model_test <- test %>%
   select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt ) %>% 
   mutate(Fake = as.factor(Fake))
 
-
 ```
 
 
@@ -364,6 +363,29 @@ imp_lr <- varImp(glm_mod, scale = FALSE)
 
 plot(imp_lr)
 
+
+```
+
+
+```{r}
+
+
+
+# Making nice table to print
+
+models <- list(glm_mod) # Making a list of all models
+
+sum_table <- summary_table(models, model_test, model_test$Fake)
+
+sum_table
+
+
+```
+
+
+```{r}
+
+sum_table.bench
 
 ```
 
@@ -468,6 +490,7 @@ summary_table <- function(models,testdata, var_of_interest){
 sum_table <- summary_table(models, model_test, model_test$Fake)
 
 kableExtra::kable(sum_table)
+
 
 
 ```
