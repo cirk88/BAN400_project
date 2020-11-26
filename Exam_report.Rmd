@@ -148,7 +148,7 @@ DF <- DF %>%
          exclamation_count.txt = str_count(paste(DF$text), "!"), 
          w_count.title = str_count(paste(DF$title), " "),
          punct_count.title = str_count(paste(DF$title), "[[:punct:]]"),
-         upper_count.title = str_count(paste(DF$text), "[[:upper:]]"),
+         upper_count.title = str_count(paste(DF$title), "[[:upper:]]"),
          exclamation_count.title = str_count(paste(DF$title), "!"))
 
 
