@@ -534,21 +534,11 @@ registerDoSEQ()
 # Select all variable we are using in our models
 
 model_train <- train %>% 
-<<<<<<< HEAD
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,
-         w_count.title,punct_count.title, exclamation_count.title) %>% 
-  mutate(Fake = as.factor(Fake))
-
-model_test <- test %>%  
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,
-         w_count.title,punct_count.title, exclamation_count.title) %>%  
-=======
   select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt  ) %>% 
   mutate(Fake = as.factor(Fake))
 
 model_test <- test %>% 
   select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt ) %>% 
->>>>>>> 307d25f9ec485fc3207ae765e526296c61877308
   mutate(Fake = as.factor(Fake))
 
 
