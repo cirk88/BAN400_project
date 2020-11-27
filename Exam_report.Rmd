@@ -709,6 +709,8 @@ glm_mod <- train(
   method = "glm",
   family = "binomial"
 )
+
+
 ```
 
 
@@ -792,6 +794,7 @@ imp_lr <- varImp(models[[1]], scale = FALSE)
 
 plot(imp_lr)
 
+
 ```
 
 
@@ -838,7 +841,6 @@ sum_table <- summary_table(models, model_test, model_test$Fake)
 
 kableExtra::kable(sum_table)
 
-summary(glm_mod)
 
 ```
 
