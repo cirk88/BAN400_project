@@ -102,7 +102,7 @@ All graphs will be visualized using ggplot package.
  
 *Sentiment dictionary:* 
  
-Baccianella S., Esuli, A. and Sebastiani, F. (2010). SentiWordNet 3.0: An Enhanced Lexical Resource for Sentiment Analysis and Opinion Mining. International Conference on Language Resources and Evaluation.
+Loughran, T. and McDonald, B. (2016). Textual analysis in accounting and finance: A survey. Journal of Accounting Research 54(4), 1187-1230. doi: 10.2139/ssrn.2504147 
 
 \pagebreak
 
@@ -424,7 +424,7 @@ t.title_bigrams <- paste(unlist(t.train$bigram_title), collapse = " ") %>%
 #### 3.1 Visualizing the sentiment analysis
 
 
- > For the sentiment analysis, we decided to go with the sentiment dictionary sentiword. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. We ffound this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an augmented version of Baccianella, Esuli and Sebastiani's (2010) positive/negative word list as sentiment lookup values.*"
+ > For the sentiment analysis, we decided to go with the sentiment dictionary: Loughran-McDonald Polarity Table. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. We ffound this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an filtered version of Loughran & McDonald's (2016) positive/negative financial word list as sentiment lookup values.*"
 
 
 ```{r}
