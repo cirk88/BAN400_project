@@ -23,18 +23,18 @@ fluidPage(
         width = "70px", height = "70px"
       ), img(
         src = "pic2.png",
-        width = "170px", height = "70px"
+        width = "200px", height = "70px"
       ), width = 4
     ),
     
     # Text description
     
-    mainPanel(br(), 
-              "Paste the title and body of a news article you find online on the text box,", br(),
-              "and our algorithm will tell you if the article is true or FAKE news!", br(),
-              "The results are based on a machine learning model trained on American news articles.", br(),
-              "The deciding factors of what could be considered fake or true news range from forms of", br(),
-              "of formatting, to specific keywords within the article. This means that the algorithm does not", br(),
+    mainPanel(br(),
+              "Paste the title and body of a news article you find online on the text box,",
+              "and our algorithm will tell you if the article is true or FAKE news!",
+              "The results are based on a machine learning model trained on American news articles.", 
+              "The deciding factors of what could be considered fake or true news range from forms", 
+              "of formatting, to specific keywords within the article. This means that the algorithm does not", 
               "validate the content of the article.", br(), 
               br(),
               "Note: The model need more than 30 words in the text to give a result!", br(),

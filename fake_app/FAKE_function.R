@@ -11,6 +11,7 @@ FAKEpred <- function(model, titledata, textdata){
   library(parallel)
   library(caret)
   library(xgboost)
+  library(gbm)
 
   
 DF <- cbind(titledata, textdata) %>% 

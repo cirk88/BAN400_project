@@ -5,6 +5,6 @@ account: cirk88
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3306970
-bundleId: 3910062
+bundleId: 3913702
 url: https://cirk88.shinyapps.io/fake_app/
-when: 1606418257.38266
+when: 1606506016.66588
