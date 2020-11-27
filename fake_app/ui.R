@@ -21,6 +21,9 @@ fluidPage(
       img(
         src = "pic1.png",
         width = "70px", height = "70px"
+      ), img(
+        src = "pic2.png",
+        width = "70px", height = "70px"
       ), width = 3
     ),
     
