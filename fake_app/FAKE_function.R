@@ -59,8 +59,6 @@ data <-  data %>%
 #Sentiment Analysis
 
 
-
-
 cl <- parallel::makeCluster(2)
 
 sentiment.fun  <- function(x){
