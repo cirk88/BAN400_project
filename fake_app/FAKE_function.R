@@ -12,6 +12,7 @@ FAKEpred <- function(model, titledata, textdata){
   library(caret)
   library(xgboost)
 
+  
 DF <- cbind(titledata, textdata) %>% 
   as.data.frame()
 
@@ -109,7 +110,7 @@ fake_or_not <- ifelse(pred2 == 0, "TRUE","FAKE")
 
 prob_class <- ifelse(pred2 == 1, pred1[,"1"], pred1[,"0"])
 
-paste(fake_or_not, "with a probability of", round(prob_class * 100,2),"%")
+paste("According to our calculations, there is a",round(prob_class * 100,2),"% chance that this article is" , fake_or_not)
 
 }
 
