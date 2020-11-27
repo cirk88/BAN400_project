@@ -30,9 +30,12 @@ fluidPage(
     # Text description
     
     mainPanel(br(), 
-              "Find an english article or news online and predict the possibility of fake news.", br(),
-              "Furthermore, as the result is based on machine learning tecniques and trained by", br(),
-              "using american data, it might deviate from the reality.", br(), 
+              "Paste the title and body of a news article you find online on the text box,", br(),
+              "and our algorithm will tell you if the article is true or FAKE news!", br(),
+              "The results are based on a machine learning model trained on American news articles.", br(),
+              "The deciding factors of what could be considered fake or true news range from forms of", br(),
+              "of formatting, to specific keywords within the article. This means that the algorithm does not", br(),
+              "validate the content of the article.", br(), 
               br(),
               "Note: The model need more than 30 words in the text to give a result!", br(),
               br(),
