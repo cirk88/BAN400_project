@@ -10,7 +10,6 @@ FAKEpred <- function(model, titledata, textdata){
   library(tm)
   library(parallel)
   library(caret)
-  library(xgboost)
 
 data <- cbind(titledata, textdata) %>% 
   as.data.frame()
@@ -64,7 +63,7 @@ data <-  data %>%
 cl <- parallel::makeCluster(2)
 
 sentiment.fun  <- function(x){
-  dictionary <- lexicon::hash_sentiment_loughran_mcdonald
+  dictionary <- lexicon::hash_sentiment_sentiword
   out <- sentimentr::sentiment_by(sentimentr::sentiment(unlist(strsplit(x, split = " "))  ,polarity_dt = dictionary))
   
   out2 <- sum(out$ave_sentiment)/sum(out$word_count)
@@ -101,10 +100,12 @@ data$media.pw <-
 
 
 
-pred <- predict(model, data, type = "prob")
+pred <- predict(model, data)
 
-paste(round(pred[,"1"] * 100,2),"%", "possibility that the writing of interest is FAKE news!")
+ifelse(pred == 0, "TRUE", "FAKE")
 
 }
+
+# shiny picture
 
 

@@ -31,6 +31,8 @@ fluidPage(
               "Furthermore, as the result is based on machine learning tecniques and trained by", br(),
               "using american data, it might deviate from the reality.", br(), 
               br(),
+              "Note: The model need more than 30 words in the text to give a result!", br(),
+              br(),
               "Happy exploring!", width = 6)),
   
   # Making title input
