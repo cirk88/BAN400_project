@@ -12,23 +12,23 @@ FAKEpred <- function(model, titledata, textdata){
   library(caret)
   library(xgboost)
 
-data <- cbind(titledata, textdata) %>% 
+DF <- cbind(titledata, textdata) %>% 
   as.data.frame()
 
-colnames(data) <- c("title","text")
+colnames(DF) <- c("title","text")
 
 #### Making variables
 
 
-data <- data %>% 
-  mutate(w_count.txt = str_count(paste(data$text), " "),
-         punct_count.txt = str_count(paste(data$text), "[[:punct:]]"),
-         upper_count.txt = str_count(paste(data$text), "[[:upper:]]"),
-         exclamation_count.txt = str_count(paste(data$text), "!"), 
-         w_count.title = str_count(paste(data$title), " "),
-         punct_count.title = str_count(paste(data$title), "[[:punct:]]"),
-         upper_count.title = str_count(paste(data$text), "[[:upper:]]"),
-         exclamation_count.title = str_count(paste(data$title), "!"))
+data <- DF %>% 
+  mutate(w_count.txt = str_count(paste(DF$text), " "),
+         punct_count.txt = str_count(paste(DF$text), "[[:punct:]]"),
+         upper_count.txt = str_count(paste(DF$text), "[[:upper:]]"),
+         exclamation_count.txt = str_count(paste(DF$text), "!"), 
+         w_count.title = str_count(paste(DF$title), " "),
+         punct_count.title = str_count(paste(DF$title), "[[:punct:]]"),
+         upper_count.title = str_count(paste(DF$title), "[[:upper:]]"),
+         exclamation_count.title = str_count(paste(DF$title), "!"))
 
 
 # Now we do some prepossessing of the data
@@ -97,11 +97,19 @@ data$media.pw <-
   str_count(string = paste(data$bigram_text),
             pattern = media)/data$w_count.txt
 
+data <- data %>%  select(w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title,                       
+               exclamation_count.title,sentiment,politician.pw, upper_count.title, media.pw, upper_count.txt)
 
 
-pred <- predict(model, data, type = "prob")
+pred1 <- predict(model, data, type = "prob")
+pred2 <- predict(model, data)
 
-paste(round(pred[,"1"] * 100,2),"%", "possibility that the writing of interest is FAKE news!")
+fake_or_not <- ifelse(pred2 == 0, "TRUE","FAKE")
+
+
+prob_class <- ifelse(pred2 == 1, pred1[,"1"], pred1[,"0"])
+
+paste(fake_or_not, "with a probability of", round(prob_class * 100,2),"%")
 
 }
 

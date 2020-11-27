@@ -23,8 +23,8 @@ fluidPage(
         width = "70px", height = "70px"
       ), img(
         src = "pic2.png",
-        width = "70px", height = "70px"
-      ), width = 3
+        width = "170px", height = "70px"
+      ), width = 4
     ),
     
     # Text description
@@ -66,7 +66,7 @@ fluidPage(
       
       actionButton(inputId = "predict",
                    label = "Predict"),
-      width = 3),
+      width = 4),
     
     # Output table
     
