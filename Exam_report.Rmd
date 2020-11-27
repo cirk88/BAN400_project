@@ -228,7 +228,7 @@ DF <-  DF %>%
 
 > **NOTE:** Adding the sentiment score takes a long time, *over 2 hours with 8 cores*, the sentiment.rds file should have been included with this code, and it contains the data we get after we run the code. If you would prefer not to wait for the code to run, *skip the next chunk*. 
 
-```{r, message=FALSE,include=FALSE, eval=FALSE}
+```{r, include=FALSE, message=FALSE,include=FALSE, eval=FALSE}
 
 #Sentiment Analysis
 
@@ -241,7 +241,7 @@ library(sentimentr)
 library(parallel)
 
 sentiment.fun  <- function(x){
-  dictionary <- lexicon::hash_sentiment_sentiword
+  dictionary <- lexicon::hash_sentiment_loughran_mcdonald
   out <- sentimentr::sentiment_by(sentimentr::sentiment(unlist(strsplit(x, split = " "))  ,polarity_dt = dictionary))
   
   out2 <- sum(out$ave_sentiment)/sum(out$word_count)
@@ -451,7 +451,7 @@ freq_text <- table(text_tokens)%>%
 
 # choosing the sentiment dictionary 
 
-dictionary <- lexicon::hash_sentiment_sentiword
+dictionary <- lexicon::hash_sentiment_loughran_mcdonald
 dictionary.n <- dictionary%>% filter(dictionary$y < 0)
 dictionary.p <- dictionary%>% filter(dictionary$y > 0)
 
@@ -712,7 +712,7 @@ glm_mod <- train(
 ```
 
 
-```{r,  message=FALSE,include=FALSE, eval=FALSE}
+```{r, include=FALSE, message=FALSE,include=FALSE, eval=FALSE}
 # All files are saved so that we do not need to run this script
 
 # XGB
@@ -837,6 +837,8 @@ summary_table <- function(models,testdata, var_of_interest){
 sum_table <- summary_table(models, model_test, model_test$Fake)
 
 kableExtra::kable(sum_table)
+
+summary(glm_mod)
 
 ```
 
