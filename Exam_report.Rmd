@@ -20,8 +20,15 @@ indent: true
 
 ```{r setup, include=FALSE, message=FALSE}
 
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 options(scipen = 99999) # Do not wish to have scientific  notations.
+
+
+
+```
+
+
+```{r}
 
 # loading the required packages:
 
@@ -45,11 +52,6 @@ library(SentimentAnalysis)
 library(lexicon)
 require(tokenizers)
 require(wordcloud)
-
-```
-
-
-```{r}
 
 ### IMPORTANT! ###
 
@@ -285,6 +287,7 @@ DF <- DF %>%
 
 ```
 
+
 >
 
 ---- *Adding more predictors based on our visualization* ----
@@ -303,7 +306,7 @@ DF <- DF %>%
 
 >
  
-```{r}
+```{r, include = FALSE}
 
 #Searching for certain keywords
 
@@ -327,6 +330,7 @@ media <- "(twitter_com)|(pic_twitter)|(getty_images)|(fox_news)|(social_media)|(
 DF$media.pw <-
   str_count(string = paste(DF$bigram_text),
             pattern = media)/DF$w_count.txt
+
 
 ```
 
@@ -562,8 +566,9 @@ get.KWIC(keyword = "donald_trump",
 
 ```{r}
 
-KWIC.trump[4:10,]
+library(kableExtra)
 
+kable(KWIC.trump[4:10,])
 
 ```
 
@@ -571,7 +576,8 @@ KWIC.trump[4:10,]
 
 ```{r}
 
-KWIC.trump_bigram[4:10,]
+
+kable(KWIC.trump_bigram[4:10,])
 
 
 ```
@@ -678,22 +684,27 @@ registerDoSEQ()
 # Select all variable we are using in our models
 
 model_train <- train %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt  ) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,
+         #w_count.title,
+         punct_count.title,exclamation_count.title,
+         sentiment,politician.pw, #upper_count.title, 
+         media.pw, upper_count.txt  ) %>% 
   mutate(Fake = as.factor(Fake))
 
 model_test <- test %>% 
-  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title, exclamation_count.title, sentiment, politician.pw, upper_count.title, media.pw, upper_count.txt ) %>% 
+  select(Fake,w_count.txt,punct_count.txt,exclamation_count.txt,
+         #w_count.title,
+         punct_count.title, exclamation_count.title,
+         sentiment, politician.pw, #upper_count.title, 
+         media.pw, upper_count.txt ) %>% 
   mutate(Fake = as.factor(Fake))
 
 
 ```
 
 
-<<<<<<< HEAD
+
 ```{r, warning= FALSE}
-=======
-```{r   message=FALSE, warning= F}
->>>>>>> e196a58bcb64b5abe4c7e628c4440c0b4c06befd
 
 # Run logistic regression 
 
@@ -774,7 +785,6 @@ gbm_mod = train(
   verbose = FALSE
 )
 
-# Making nice table to print
 
 models <- list(gbm_mod,knn_mod,xgb_mod) # Making a list of all models
 

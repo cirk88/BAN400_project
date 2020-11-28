@@ -99,8 +99,9 @@ data$media.pw <-
   str_count(string = paste(data$bigram_text),
             pattern = media)/data$w_count.txt
 
-data <- data %>%  select(w_count.txt,punct_count.txt,exclamation_count.txt,w_count.title,punct_count.title,                       
-               exclamation_count.title,sentiment,politician.pw, upper_count.title, media.pw, upper_count.txt)
+data <- data %>%  select(w_count.txt,punct_count.txt,exclamation_count.txt,#w_count.title,
+                         punct_count.title, exclamation_count.title,sentiment,politician.pw, #upper_count.title, 
+                         media.pw, upper_count.txt)
 
 
 pred1 <- predict(model, data, type = "prob")
