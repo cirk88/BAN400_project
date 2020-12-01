@@ -20,7 +20,7 @@ indent: true
 
 ```{r setup, include=FALSE, message=FALSE}
 
-knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+knitr::opts_chunk$set(echo = T, cache = TRUE)
 options(scipen = 99999) # Do not wish to have scientific  notations.
 
 
@@ -28,34 +28,37 @@ options(scipen = 99999) # Do not wish to have scientific  notations.
 ```
 
 
-```{r}
+```{r, warning = F, message = F}
 
 # loading the required packages:
 
-library(tidyverse)
-library(parsnip)
-library(yardstick)
-library(rsample)
+require(tidyverse)
+require(parsnip)
+require(yardstick)
+require(rsample)
 require(doParallel)
-library(recipes)
-library(ggridges)
-library(ggplot2)
-library(patchwork)
-library(xgboost)
-library(tidymodels)
-library(FactoMineR)
-library(tibble)
-library(tm)
-library(tidytext)
+require(recipes)
+require(ggridges)
+require(ggplot2)
+require(patchwork)
+require(xgboost)
+require(tidymodels)
+require(FactoMineR)
+require(tibble)
+require(tm)
+require(tidytext)
 require(sentimentr)
-library(SentimentAnalysis)
-library(lexicon)
+require(SentimentAnalysis)
+require(lexicon)
 require(tokenizers)
 require(wordcloud)
+require(docstring)
+
 
 ### IMPORTANT! ###
 
-#set the number of cores you will use for parallel calculation. Do not exceed the recommended amount.
+# set the number of cores you will use for parallel calculation.
+# Do not exceed the recommended amount.
 
 
 CORES <- 8
@@ -64,6 +67,7 @@ CORES <- 8
 cl <- parallel::makeCluster(CORES)
 
 ```
+\pagebreak
 
 \tableofcontents
 
@@ -144,7 +148,8 @@ rm(df_true, df_fake)
 
 ```{r}
 
-# First we'd like to extract a few variables which we might use on our predictive models
+# First we'd like to extract a few variables
+# which we might use on our predictive models
 
 DF <- DF %>% 
   mutate(w_count.txt = str_count(paste(DF$text), " "),
@@ -160,6 +165,8 @@ DF <- DF %>%
 ```
 
 >
+
+\pagebreak
 
 ---- *Prepossessing the data* ----
 
@@ -185,11 +192,13 @@ DF <-  DF %>%
   filter( w_count.txt > 30 ) %>% 
   mutate(text = text %>% tolower() %>%
              gsub("[^[:alpha:]]", " ", .) %>%
-#this removes any character that's not alphabetic. Those usually not carry any meaning. We may want to analyse them individually.
+#this removes any character that's not alphabetic.
+#Those usually not carry any meaning. We may want to analyze them individually.
              gsub('\\b\\w{1,2}\\s|\\b\\w{21,}\\s','', .) %>%
-#removing words that are too small (from 1 or 2 letters and huge words, 21+ letters)
+#removing words that are too small (from 1 or 2 letters) and huge words, (21+ letters)
              removeWords(., c(stopwords(kind = "en"))),
-# removing stopwords, which are words that are most common in the English language, yet carry no meaning. These are found inside the stopwords dictionary in the tm package
+# removing stopwords, which are words that are most common in the English language,
+# yet carry no meaning. These are found inside the stopwords dictionary in the tm package
          title = title %>% tolower() %>% 
              gsub("[^[:alpha:]]", " ", .) %>% 
              gsub('\\b\\w{1,2}\\s|\\b\\w{21,}\\s','', .) %>% 
@@ -209,7 +218,8 @@ DF <-  DF %>%
 ```{r}
 # Tokenizing
 
-# Tokenizing with bigrams. What this does to us, is that as bigrams, words carry a different meaning as the paired words may carry a different meaning. 
+# Tokenizing with bigrams. What this does to us, is that as bigrams,
+# words carry a different meaning as the paired words may carry a different meaning. 
 
 DF <-  DF %>% 
   mutate(bigram_text = tokenize_ngrams(text , n = 2, ngram_delim = "_"),
@@ -237,17 +247,41 @@ DF <-  DF %>%
 # Calculating the sentiment score for each observation, this function may take some time to run. 
 
 
-library(lexicon)
-library(sentimentr)
-library(parallel)
+require(lexicon)
+require(sentimentr)
+require(parallel)
 
 sentiment.fun  <- function(x){
-  dictionary <- lexicon::hash_sentiment_sentiword
+  #' Sentiment Function
+  #' 
+  #' @description This function runs through the corpus and gives a 
+  #' sentiment score for each text.  
+  #'
+  #' The function goes word by word in the corpus, and attributes a 
+  #' score from -1 (bad) to 1(good) to each word, according to the 
+  #' loughran_mcdonald sentiment dictionary. Then it takes the average  
+  #' of that score based on the word count, which should have been
+  #' in the corpus as a column named "word_count". 
+  #' 
+  #' @param x Should be a dataframe with a column containing an already
+  #' tokenized text, and a column containing the word count.The input
+  #' should be x$tokenized_text  
+  #' @usage sentiment<- as.vector(unlist(parallel::parLapply(cl,
+  #' x$token_text, sentiment.fun)))
+  #' @return If used like the usage suggestion, the value returned will 
+  #' be a vector with a sentiment for each row. 
+  #' @note This code may take a very long time to run.
+  #' @references Loughran, T. and McDonald, B. (2016). Textual analysis
+  #' in accounting and finance: A survey.Journal of Accounting Research
+  #' 54(4), 1187-1230. doi: 10.2139/ssrn.2504147
+
+  dictionary <- lexicon::hash_sentiment_loughran_mcdonald
   out <- sentimentr::sentiment_by(sentimentr::sentiment(unlist(strsplit(x, split = " "))  ,polarity_dt = dictionary))
   
   out2 <- sum(out$ave_sentiment)/sum(out$word_count)
   return(out2)
 }
+
 
 
 timestart <- Sys.time() #checking start time
@@ -266,6 +300,8 @@ Sys.time()-timestart->ptm  #checking how long it took the code to run
 
 
 saveRDS(sentiment, file = "sentiment.rds")
+
+?sentiment.fun
 
 ```
 
@@ -377,18 +413,14 @@ test<-testing(sample)
 #splitting the data back into true and false to see the difference between them.
 
 f.train <- train  %>% filter(train$Fake == 1)
-
 t.train <- train  %>% filter(train$Fake == 0)
 
 
 # extracting all the words from our training data to create the topic modeling
 
 f.all_text <- paste(c(f.train$text), collapse = " ")
-
 f.all_title <- paste(c(f.train$title), collapse = " ")
-
 t.all_text <- paste(c(t.train$text), collapse = " ")
-
 t.all_title <- paste(c(t.train$title), collapse = " ")
 
 # splitting the words and tokenizing them.
@@ -396,12 +428,10 @@ t.all_title <- paste(c(t.train$title), collapse = " ")
 f.text_tokens <- scan(text = f.all_text,
                       what = "character",
                       quote = "")
-
 f.title_tokens <- scan(text = f.all_title,
                       what = "character",
                       quote = "")
-
-f.text_bigrams <- paste(unlist(f.train$bigram_text), collapse = " ") %>% 
+f.text_bigrams <- paste(unlist(f.train$bigram_text), collapse = " ") %>%
   strsplit(.," ") %>% unlist
 
 f.title_bigrams <- paste(unlist(f.train$bigram_title), collapse = " ") %>% 
@@ -410,14 +440,11 @@ f.title_bigrams <- paste(unlist(f.train$bigram_title), collapse = " ") %>%
 t.text_tokens <- scan(text = t.all_text,
                       what = "character",
                       quote = "")
-
 t.title_tokens <- scan(text = t.all_title,
                       what = "character",
                       quote = "")
-
-t.text_bigrams <- paste(unlist(t.train$bigram_text), collapse = " ") %>% 
+t.text_bigrams <- paste(unlist(t.train$bigram_text), collapse = " ") %>%
   strsplit(.," ") %>% unlist
-
 t.title_bigrams <- paste(unlist(t.train$bigram_title), collapse = " ") %>% 
   strsplit(.," ") %>%  unlist
   
@@ -427,7 +454,7 @@ t.title_bigrams <- paste(unlist(t.train$bigram_title), collapse = " ") %>%
 #### 3.1 Visualizing the sentiment analysis
 
 
- > For the sentiment analysis, we decided to go with the sentiment dictionary: Loughran-McDonald Polarity Table. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. We ffound this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an filtered version of Loughran & McDonald's (2016) positive/negative financial word list as sentiment lookup values.*"
+ > For the sentiment analysis, we decided to go with the sentiment dictionary: Loughran-McDonald Polarity Table. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. This dictoinary seemed to be the more neutral one, which made most sense to us. We found this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an filtered version of Loughran & McDonald's (2016) positive/negative financial word list as sentiment lookup values.*"
 
 
 ```{r}
@@ -454,7 +481,7 @@ freq_text <- table(text_tokens)%>%
 
 # choosing the sentiment dictionary 
 
-dictionary <- lexicon::hash_sentiment_sentiword
+dictionary <- lexicon::hash_sentiment_loughran_mcdonald
 dictionary.n <- dictionary%>% filter(dictionary$y < 0)
 dictionary.p <- dictionary%>% filter(dictionary$y > 0)
 
@@ -477,17 +504,18 @@ negative_words <- freq_text %>%
 
 ---- *Positive words present in our data* ----
 
-```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
 wordcloud(words = positive_words$text_tokens [1:50],
           freq = positive_words$Freq[1:50])
 
 ```
+
 >
 
 ---- *Negative words present in our data* ----
 
-```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
 wordcloud(words = negative_words$text_tokens [1:50],
           freq = negative_words$Freq[1:50])
@@ -505,14 +533,36 @@ wordcloud(words = negative_words$text_tokens [1:50],
 
 
 # Getting a KWIC matrix
-# Here we build the function "get.KWIC" in order to inspect keywords. The KWIC matrix helps us identify keywords and the words related to it in our corpus. It aids in visualizing the data. 
+# Here we build the function "get.KWIC" in order to inspect keywords.
+# The KWIC matrix helps us identify keywords and the words
+# related to it in our corpus. It aids in visualizing the data. 
 
-### building the function ###
+### building the function 
 
 get.KWIC <- function(keyword,
                      n,
                      tokenized_text,
                      cores){
+  #' Get Key Word In Context
+  #' 
+  #' @description This function searches for the string pattern inputted
+  #' as "keyword" in your corpus, and returns the n words before it and
+  #' after it, so you can understand the context that the keyword chosen
+  #' is in.  
+  #' 
+  #' @param keyword A string pattern in quotation marks
+  #' @param n The number of words that are to be returned before and
+  #' after the keyword.
+  #' @param tokenized_text the tokenized corpus.
+  #' @param cores This function uses parallel computing, so the number
+  #' of cores to be used should be set here. 
+  #' @usage get.KWIC(keyword = "keyword",
+  #'       n = 3,
+  #'       tokenized_text = DF$text_tokens, 4) 
+  #' @return The return is a table with the 3 words before and after
+  #' "keyword" appears in your text.
+  #' @note This function takes a while to run.
+ 
   cores <- min(detectCores(), cores)
   cl <- makeCluster(cores)
   registerDoParallel(cl)
@@ -537,6 +587,7 @@ get.KWIC <- function(keyword,
 
 }
 
+?get.KWIC
 
 ```
 
@@ -545,7 +596,7 @@ get.KWIC <- function(keyword,
 ```{r}
 
 
-### using the function ###
+### using the function 
 
 get.KWIC(keyword = "trump",
          n = 3,
@@ -556,23 +607,31 @@ get.KWIC(keyword = "donald_trump",
          tokenized_text = text_bigrams, CORES) -> KWIC.trump_bigram
 
 
-## we just picked these topics since they are polarizing, but they are only here as an example of the function at work ##
-
+# we just picked these topics since they are polarizing,
+# but they are only here as an example of the function at work
 
 
 ```
 
+>
+
 ---- *Example of keyword in context: trump on the tokenized data* ----
 
-```{r}
+>
 
-library(kableExtra)
+```{r, warning = F, message = F}
+
+require(kableExtra)
 
 kable(KWIC.trump[4:10,])
 
 ```
 
+>
+
 ---- *Example of keyword in context: donald_trump on the bigram data* ----
+
+>
 
 ```{r}
 
@@ -581,6 +640,7 @@ kable(KWIC.trump_bigram[4:10,])
 
 
 ```
+
 \pagebreak
 
 #### 3.3 Visualizing word frequency
@@ -628,10 +688,14 @@ t.freq_title_2 <- table(t.title_bigrams)%>%
 
 > 
 
+\pagebreak
+
+>
+
 ---- *Fake News word frequency* ----
 
 
-```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
 #Making wordclouds of our training data
 
@@ -643,7 +707,7 @@ wordcloud(words = f.freq_text_1$f.text_tokens [1:50],
 
 ---- *True News word frequency* ----
 
-```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
 wordcloud(words = t.freq_text_1$t.text_tokens [1:50],
           freq = t.freq_text_1$Freq[1:50])
@@ -655,7 +719,7 @@ wordcloud(words = t.freq_text_1$t.text_tokens [1:50],
 
 ---- *Fake News bigram frequency* ----
 
-```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
 wordcloud(words = f.freq_text_2$f.text_bigrams [1:50],
           freq = f.freq_text_2$Freq[1:50])
@@ -664,7 +728,7 @@ wordcloud(words = f.freq_text_2$f.text_bigrams [1:50],
 
 ---- *True News bigram frequency* ----
 
-```{r,fig.height=4,fig.width=4,warning=FALSE,message=FALSE}
+```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
 wordcloud(words = t.freq_text_2$t.text_bigrams [1:50],
           freq = t.freq_text_2$Freq[1:50])
@@ -677,7 +741,7 @@ wordcloud(words = t.freq_text_2$t.text_bigrams [1:50],
 
 ```{r,  message=FALSE, warning= F}
 
-library(tidyverse)
+require(tidyverse)
 
 registerDoSEQ()
 
@@ -704,13 +768,13 @@ model_test <- test %>%
 
 
 
-```{r, warning= FALSE}
+```{r, warning = F, message = F}
 
 # Run logistic regression 
 
 registerDoSEQ()
 
-library(caret)
+require(caret)
 
 # logistic reg
 
@@ -809,7 +873,7 @@ plot(imp_lr)
 ```
 
 
-> Here we can see how well our predictors performed in the linear regression. It gives us a better understanding of how the data is shaped and what was most important on deciding if the news were fake or not. It seems like the formating of the data gives off most information. While the sentiment analysis, despite being statistically relevant, does not give much information. 
+> Here we can see how well our predictors performed in the linear regression. It gives us a better understanding of how the data is shaped and what was most important on deciding if the news were fake or not. It seems like the formating of the data gives off most information. While the sentiment analysis, despite being statistically relevant, does not give much information. We removed variables that had too high importance, as we felt that that would fit our model too much to the format that our data came in. 
 
 ---- *Testing the trained regression models* ----
 
@@ -817,6 +881,18 @@ plot(imp_lr)
 # Make function
 
 summary_table <- function(models,testdata, var_of_interest){
+  #' Create a Summary table
+  #' 
+  #' @description This function will create a table with all the 
+  #' relevant information from testing the multiple models specified. 
+  #' 
+  #' @param models A trained model to be tested
+  #' @param testdata The data the model should be tested against
+  #' @param var_of_interest The regressed variable 
+  #' @usage sum_table <- summary_table(models, model_test,
+  #' model_test$Fake)
+  #' @return The return is a table with "Methods", "Accuracy", "Kappa",
+  #' "Sensitivity" and "Specificity" scores. 
   
   # making empty matrix to fill values  
   
@@ -848,6 +924,8 @@ summary_table <- function(models,testdata, var_of_interest){
   
 }
 
+?summary_table
+
 sum_table <- summary_table(models, model_test, model_test$Fake)
 
 kableExtra::kable(sum_table)
@@ -858,9 +936,15 @@ kableExtra::kable(sum_table)
 
 \pagebreak
 
-### 5. make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
+### 5. Make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
 
 ```{r}
 
+#The app, along with its code, is included in a different file. 
+
 ```
+
+### 6. Conclusions
+
+> After finishing the app, we ran the code with different articles to see how the results would look like if we tested the data against articles that were not included in the original dataset. As it is mentioned in the app itself, this code does not check the validity of the content, but instead it analyzes the formating of the text to see if it resembles the fake news included in our dataset. What this means, is that the same article can be called true or fake, depending on how we change small elements like punctuation or capital letters. Perhaps if we did a more in-depth research on keywords, and picked a more appropriate dictionary for the sentiment analysis our code would be able to more correctly guess the validity of true and fake news. As it stands, the app is a fun experiment, and it can be used to see if the formatting of an article resembles fake news or not. 
 
