@@ -1,7 +1,7 @@
 ---
 title: "Group final project - BAN400 fall 2020 "
-author: "Candidate: (...)"
-date: "6/11/2020"
+author: "Candidate: 40 & .."
+date: "15/12/2020"
 output:
   pdf_document:
     dev: png
@@ -12,9 +12,10 @@ header-includes:
 - \usepackage{booktabs}
 - \usepackage{sectsty} \sectionfont{\centering}
 - \usepackage{indentfirst}
+- \usepackage{setspace}\onehalfspacing
 fontsize: 11pt
-spacing: double
-indent: true
+
+
 ---
 
 
@@ -29,9 +30,7 @@ options(scipen = 99999) # Do not wish to have scientific  notations.
 
 
 ```{r, warning = F, message = F}
-
 # loading the required packages:
-
 require(tidyverse)
 require(parsnip)
 require(yardstick)
@@ -54,19 +53,16 @@ require(tokenizers)
 require(wordcloud)
 require(docstring)
 
-
 ### IMPORTANT! ###
-
-# set the number of cores you will use for parallel calculation.
-# Do not exceed the recommended amount.
-
+# Set the number of cores you will use for parallel calculation.
+# Do not exceed the recommended amount. 
 
 CORES <- 8
-
-
 cl <- parallel::makeCluster(CORES)
-
 ```
+
+
+
 \pagebreak
 
 \tableofcontents
@@ -101,26 +97,22 @@ cl <- parallel::makeCluster(CORES)
 
 ## Sources
 
-For this we will use a data set from Kaggle: https://www.kaggle.com/clmentbisaillon/fake-and-real-news-dataset 
+- For this we will use a data set from Kaggle: https://www.kaggle.com/clmentbisaillon/fake-and-real-news-dataset 
 (Links to an external site.) with data from 2016 to 2017.
 
-All graphs will be visualized using ggplot package.
+- All graphs will be visualized using ggplot package.
  
 *Sentiment dictionary:* 
  
-Loughran, T. and McDonald, B. (2016). Textual analysis in accounting and finance: A survey. Journal of Accounting Research 54(4), 1187-1230. doi: 10.2139/ssrn.2504147 
+- Loughran, T. and McDonald, B. (2016). Textual analysis in accounting and finance: A survey. Journal of Accounting Research 54(4), 1187-1230. doi: 10.2139/ssrn.2504147 
 
 \pagebreak
 
 ## Workflow: 
 
-### 1. getting the data to run in R and tidyverse
+### 1. Getting the data to run in R and tidyverse
 
-  
-#### 1.1 Merging true and fake news datasets, adding a new dummy column if news is true or fake. 
-  
 ```{r}
-
 # Loading in the data, binding them together----
 
 df_fake <- readRDS("Fake.rds") %>%
@@ -128,23 +120,22 @@ df_fake <- readRDS("Fake.rds") %>%
 
 df_true <- readRDS("True.rds") %>% 
   mutate(Fake = 0)
+```
 
+### 2. Merging true and fake news datasets, adding a new dummy column if news is true or fake. 
 
+```{r}
 DF <- rbind(df_fake, df_true)
 
 rm(df_true, df_fake)
 
-
 ```
 
+### 3. Prepossesing and getting the data ready for modelling. 
 
-#### 1.2 Prepossesing and getting the data ready for modelling. 
+**3.1 Extracting counts of the formatting choices**
 
->
-
----- **Extracting counts of the formatting choices** ----
-
-> Prepossesing the data means removing most of the formatting. However, we will use some formatting choices as regressors, so before shaping the text we need to extract the information we need. 
+Prepossesing the data means removing most of the formatting. However, we will use some formatting choices as regressors, so before shaping the text we need to extract the information we need. 
 
 ```{r}
 
@@ -164,13 +155,12 @@ DF <- DF %>%
 
 ```
 
->
 
 \pagebreak
 
----- *Prepossessing the data* ----
+**3.2 Prepossessing the data** 
 
-> Now we can preposses the data. In the case of our corpus, we: 
+Now we can preposses the data. In the case of our corpus, we: 
 
 - Removed datapoints with no title, and bodies with less than 30 words.
 
@@ -195,10 +185,12 @@ DF <-  DF %>%
 #this removes any character that's not alphabetic.
 #Those usually not carry any meaning. We may want to analyze them individually.
              gsub('\\b\\w{1,2}\\s|\\b\\w{21,}\\s','', .) %>%
-#removing words that are too small (from 1 or 2 letters) and huge words, (21+ letters)
+#removing words that are too small (from 1 or 2 letters) and huge words, 
+  #(21+ letters)
              removeWords(., c(stopwords(kind = "en"))),
-# removing stopwords, which are words that are most common in the English language,
-# yet carry no meaning. These are found inside the stopwords dictionary in the tm package
+# removing stopwords, which are words that are most common in the English 
+# language, yet carry no meaning. These are found inside the stopwords 
+# dictionary in the tm package.
          title = title %>% tolower() %>% 
              gsub("[^[:alpha:]]", " ", .) %>% 
              gsub('\\b\\w{1,2}\\s|\\b\\w{21,}\\s','', .) %>% 
@@ -206,20 +198,19 @@ DF <-  DF %>%
 
 
 ```
->
 
 \pagebreak
 
----- *Tokenizing the data and creating bigrams* ----
+**3.3 Tokenizing the data and creating bigrams**
 
-
-> Here we will split the data word by word. We will do the analysis with unigrams (which is every word separated individually), and bigrams (which are words separated in twos). The individual words will be used for the sentiment analysis, while bigrams will give us better keywords. 
+Here we will split the data word by word. We will do the analysis with unigrams (which is every word separated individually), and bigrams (which are words separated in twos). The individual words will be used for the sentiment analysis, while bigrams will give us better keywords. 
 
 ```{r}
 # Tokenizing
 
 # Tokenizing with bigrams. What this does to us, is that as bigrams,
-# words carry a different meaning as the paired words may carry a different meaning. 
+# words carry a different meaning as the paired words may carry a different 
+# meaning. 
 
 DF <-  DF %>% 
   mutate(bigram_text = tokenize_ngrams(text , n = 2, ngram_delim = "_"),
@@ -231,13 +222,13 @@ DF <-  DF %>%
 
 ```
 
->
+**3.4 Adding the sentiment score**
 
----- *Adding the sentiment score* ----
+The code will run through every single word in our text corpus and rate them with a sentiment ranging from -1 (bad) to 1 (good). Then it will return the average score for each article.
 
-> The code will run through every single word in our text corpus and rate them with a sentiment ranging from -1 (bad) to 1 (good). Then it will return the average score for each article.
+\bigbreak
 
-> **NOTE:** Adding the sentiment score takes a long time, *over 2 hours with 8 cores*, the sentiment.rds file should have been included with this code, and it contains the data we get after we run the code. If you would prefer not to wait for the code to run, *skip the next chunk*. 
+**NOTE:** Adding the sentiment score takes a long time, *over 2 hours with 8 cores*, the sentiment.rds file should have been included with this code, and it contains the data we get after we run the code. If you would prefer not to wait for the code to run, *skip the next chunk*. 
 
 ```{r, message=FALSE,include=FALSE, eval=FALSE}
 
@@ -323,56 +314,51 @@ DF <- DF %>%
 
 ```
 
+\newpage
 
->
 
----- *Adding more predictors based on our visualization* ----
+**3.5 Adding more predictors based on our visualization**
 
-> We added this step after performing the visualization. Here we create a score based on the keyword topics we decided after looking at the data. We decided to create a politician per word score, and a media per word score. We decided that bigrams would carry more meaning in our analysis, and they were picked based on what we saw within the training data and what we believe to be relevant. This does mean that there is a higher potential for overfitting these predictors to the training data.
+We added this step after performing the visualization. Here we create a score based on the keyword topics we decided after looking at the data. We decided to create a politician per word score, and a media per word score. We decided that bigrams would carry more meaning in our analysis, and they were picked based on what we saw within the training data and what we believe to be relevant. This does mean that there is a higher potential for overfitting these predictors to the training data.
 
-> The bigrams we chose for politicians were: 
+\bigbreak
+
+The bigrams we chose for politicians were: 
 
 - *barack_obama, bernie_sanders, donald_trump, hillary_clinton and joe_biden*
 
-> The bigrams we chose for media were: 
+The bigrams we chose for media were: 
 
 - *twitter_com, pic_twitter, getty_images, fox_news, social_media, fake_news, york_times, washington_post, mainstream_media, via_youtube, via_getty, via_video, facebook_page, youtube_com and abc_news*
 
-
-
->
  
-```{r, include = FALSE}
-
+```{r}
 #Searching for certain keywords
 
 #Politicians relevant at the time
-
-politicians <- "(barack_obama)|(bernie_sanders)|(donald_trump)|(hillary_clinton)|(joe_biden)"  	
+politicians <- "(barack_obama)|(bernie_sanders)|(donald_trump)|
+                (hillary_clinton)|(joe_biden)"  	
  
-
 # Creating a politician per word metric, using the bigrams
-
 DF$politician.pw <-
   str_count(string = paste(DF$bigram_text),
             pattern = politicians)/DF$w_count.txt
 
 #Media related bigrams
-
-media <- "(twitter_com)|(pic_twitter)|(getty_images)|(fox_news)|(social_media)|(fake_news)|(york_times)|(washington_post)|(mainstream_media)|(via_youtube)|(via_getty)|(via_video)|(facebook_page)|(youtube_com)|(abc_news)"
+media <- "(twitter_com)|(pic_twitter)|(getty_images)|(fox_news)|(social_media)|
+          (fake_news)|(york_times)|(washington_post)|(mainstream_media)|
+          (via_youtube)|(via_getty)|(via_video)|(facebook_page)|(youtube_com)|
+          (abc_news)"
 
 # Creating a politician per word metric, using the bigrams
-
 DF$media.pw <-
   str_count(string = paste(DF$bigram_text),
             pattern = media)/DF$w_count.txt
-
-
 ```
 
+\newpage
 
-### 2. Separate the data into training and test data.
-
+### 4. Separate the data into training and test data.
 
 ```{r}
 
@@ -383,8 +369,8 @@ set.seed(10)
 # Creating test and train data:
 
 sample <- initial_split(DF,
-                           strata = Fake, # variable used for stratified sampling
-                           prop = 0.75)# We are splitting 75% training and 25% test.
+                        strata = Fake, # variable used for stratified sampling
+                        prop = 0.75)# We are splitting 75% training and 25% test.
 
 # Extracting the training data: 
 
@@ -396,76 +382,62 @@ test<-testing(sample)
 
 ```
 
->
-
-> Here we split our data into training and test. First, we set a seed so the test is replicable. Then the split is made with 75% of our data in the training set, and 25% on the test set. The data is stratified with the Fake dummy variable in mind. It is important we go through this step before visualizing the data. Because we create some variables through visualization, and we don't want to introduce bias into our analysis. 
-
-\pagebreak
 
 
-### 3 Visualizing the data
+Here we split our data into training and test. First, we set a seed so the test is replicable. Then the split is made with 75% of our data in the training set, and 25% on the test set. The data is stratified with the Fake dummy variable in mind. It is important we go through this step before visualizing the data. Because we create some variables through visualization, and we don't want to introduce bias into our analysis. 
 
-> Here we have the steps we took to see how our data actually looked like. Since this data is filled with so much text, we used a Key words in context table to see specific words in the context of where they appear. We also can visuallize the frequency of the words in a wordcloud, to better understand what is being most spoke on in our dataset. 
+\newpage
 
+### 5. Visualizing the data
+
+Here we have the steps we took to see how our data actually looked like. Since this data is filled with so much text, we used a Key words in context table to see specific words in the context of where they appear. We also can visuallize the frequency of the words in a wordcloud, to better understand what is being most spoke on in our dataset. 
 
 ```{r}
 
 #splitting the data back into true and false to see the difference between them.
-
 f.train <- train  %>% filter(train$Fake == 1)
 t.train <- train  %>% filter(train$Fake == 0)
 
-
 # extracting all the words from our training data to create the topic modeling
-
 f.all_text <- paste(c(f.train$text), collapse = " ")
 f.all_title <- paste(c(f.train$title), collapse = " ")
 t.all_text <- paste(c(t.train$text), collapse = " ")
 t.all_title <- paste(c(t.train$title), collapse = " ")
 
 # splitting the words and tokenizing them.
+f.text_tokens <- scan(text = f.all_text, what = "character", quote = "")
+f.title_tokens <- scan(text = f.all_title, what = "character", quote = "")
 
-f.text_tokens <- scan(text = f.all_text,
-                      what = "character",
-                      quote = "")
-f.title_tokens <- scan(text = f.all_title,
-                      what = "character",
-                      quote = "")
 f.text_bigrams <- paste(unlist(f.train$bigram_text), collapse = " ") %>%
   strsplit(.," ") %>% unlist
-
 f.title_bigrams <- paste(unlist(f.train$bigram_title), collapse = " ") %>% 
   strsplit(.," ") %>%  unlist
 
-t.text_tokens <- scan(text = t.all_text,
-                      what = "character",
-                      quote = "")
-t.title_tokens <- scan(text = t.all_title,
-                      what = "character",
-                      quote = "")
+t.text_tokens <- scan(text = t.all_text, 
+                      what = "character", quote = "")
+t.title_tokens <- scan(text = t.all_title, 
+                       what = "character", quote = "")
+
 t.text_bigrams <- paste(unlist(t.train$bigram_text), collapse = " ") %>%
   strsplit(.," ") %>% unlist
 t.title_bigrams <- paste(unlist(t.train$bigram_title), collapse = " ") %>% 
   strsplit(.," ") %>%  unlist
   
-
 ```
 
-#### 3.1 Visualizing the sentiment analysis
+\newpage
 
+**5.1 Visualizing the sentiment analysis**
 
- > For the sentiment analysis, we decided to go with the sentiment dictionary: Loughran-McDonald Polarity Table. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. This dictoinary seemed to be the more neutral one, which made most sense to us. We found this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an filtered version of Loughran & McDonald's (2016) positive/negative financial word list as sentiment lookup values.*"
+For the sentiment analysis, we decided to go with the sentiment dictionary: Loughran-McDonald Polarity Table. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. This dictoinary seemed to be the more neutral one, which made most sense to us. We found this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an filtered version of Loughran & McDonald's (2016) positive/negative financial word list as sentiment lookup values.*"
 
 
 ```{r}
 
 # Creating a dataframe with all the words
-
 all_text <- paste(c(train$text), collapse = " ")
 
-
 #tokenizing all words
-
 text_tokens <- scan(text = all_text,
                       what = "character",
                       quote = "")
@@ -480,29 +452,25 @@ freq_text <- table(text_tokens)%>%
   as.data.frame()
 
 # choosing the sentiment dictionary 
-
 dictionary <- lexicon::hash_sentiment_loughran_mcdonald
 dictionary.n <- dictionary%>% filter(dictionary$y < 0)
 dictionary.p <- dictionary%>% filter(dictionary$y > 0)
 
 #seeing which positive words are present
-
 positive_words <- freq_text %>%
   filter(text_tokens %in% dictionary.p$x) %>%
   arrange(desc(Freq)) %>% head(50)
 
 # seeing which negative words are present
-
 negative_words <- freq_text %>%
   filter(text_tokens %in% dictionary.n$x) %>%
   arrange(desc(Freq)) %>% head(50)
-
 
 ```
 
 \pagebreak
 
----- *Positive words present in our data* ----
+**Positive words present in our data**
 
 ```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
@@ -511,9 +479,7 @@ wordcloud(words = positive_words$text_tokens [1:50],
 
 ```
 
->
-
----- *Negative words present in our data* ----
+**Negative words present in our data**
 
 ```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
@@ -524,9 +490,9 @@ wordcloud(words = negative_words$text_tokens [1:50],
 
 \pagebreak
 
-#### 3.2 Making a KWIC (Key words in context) table
+**5.2 Making a KWIC (Key words in context) table**
 
-> *this helps us better visualize the text and understand the context of some words*
+This helps us better visualize the text and understand the context of some words.
 
 
 ```{r}
@@ -613,37 +579,31 @@ get.KWIC(keyword = "donald_trump",
 
 ```
 
->
+\newpage
 
----- *Example of keyword in context: trump on the tokenized data* ----
-
->
+**Example of keyword in context: trump on the tokenized data**
 
 ```{r, warning = F, message = F}
 
 require(kableExtra)
 
-kable(KWIC.trump[4:10,])
+kable(KWIC.trump[4:10,],booktabs = T)
 
 ```
 
->
-
----- *Example of keyword in context: donald_trump on the bigram data* ----
-
->
+**Example of keyword in context: donald_trump on the bigram data**
 
 ```{r}
 
 
-kable(KWIC.trump_bigram[4:10,])
+kable(KWIC.trump_bigram[4:10,],booktabs = T)
 
 
 ```
 
 \pagebreak
 
-#### 3.3 Visualizing word frequency
+### 6 Visualizing word frequency
 
 ```{r}
 
@@ -686,13 +646,13 @@ t.freq_title_2 <- table(t.title_bigrams)%>%
 
 ```
 
-> 
+
 
 \pagebreak
 
->
 
----- *Fake News word frequency* ----
+
+**Fake News word frequency**
 
 
 ```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
@@ -705,7 +665,7 @@ wordcloud(words = f.freq_text_1$f.text_tokens [1:50],
 
 ```
 
----- *True News word frequency* ----
+**True News word frequency**
 
 ```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
@@ -717,7 +677,7 @@ wordcloud(words = t.freq_text_1$t.text_tokens [1:50],
 
 \pagebreak
 
----- *Fake News bigram frequency* ----
+**Fake News bigram frequency**
 
 ```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
@@ -726,7 +686,7 @@ wordcloud(words = f.freq_text_2$f.text_bigrams [1:50],
 
 ```
 
----- *True News bigram frequency* ----
+**True News bigram frequency**
 
 ```{r,fig.height=3,fig.width=3,warning=FALSE,message=FALSE}
 
@@ -737,12 +697,11 @@ wordcloud(words = t.freq_text_2$t.text_bigrams [1:50],
 \pagebreak
 
 
-### 4. Training the machine learning model
+### 7. Training the machine learning model
 
 ```{r,  message=FALSE, warning= F}
 
 require(tidyverse)
-
 registerDoSEQ()
 
 # Select all variable we are using in our models
@@ -763,7 +722,6 @@ model_test <- test %>%
          media.pw, upper_count.txt ) %>% 
   mutate(Fake = as.factor(Fake))
 
-
 ```
 
 
@@ -771,8 +729,6 @@ model_test <- test %>%
 ```{r, warning = F, message = F}
 
 # Run logistic regression 
-
-registerDoSEQ()
 
 require(caret)
 
@@ -790,6 +746,7 @@ glm_mod <- train(
 
 ```
 
+\newpage
 
 ```{r,  message=FALSE,include=FALSE, eval=FALSE}
 # All files are saved so that we do not need to run this script
@@ -857,7 +814,7 @@ saveRDS(models, "models.rds")
 
 ```
 
----- *Predictor importance plot* ----
+**Predictor importance plot**
 
 ```{r}
 
@@ -873,9 +830,11 @@ plot(imp_lr)
 ```
 
 
-> Here we can see how well our predictors performed in the linear regression. It gives us a better understanding of how the data is shaped and what was most important on deciding if the news were fake or not. It seems like the formating of the data gives off most information. While the sentiment analysis, despite being statistically relevant, does not give much information. We removed variables that had too high importance, as we felt that that would fit our model too much to the format that our data came in. 
+Here we can see how well our predictors performed in the logistic regression. It gives us a better understanding of how the data is shaped and what was most important on deciding if the news were fake or not. It seems like the formating of the data gives off most information. While the sentiment analysis, despite being statistically relevant, does not give much information. We removed variables that had too high importance, as we felt that that would fit our model too much to the format that our data came in. The reason was that during testing it on aticels online we found the variables for title to be to dominated. This way we manage to loosen the model and made it focus more on the text itself. 
 
----- *Testing the trained regression models* ----
+\newpage
+
+**Testing the trained regression models**
 
 ```{r}
 # Make function
@@ -898,7 +857,8 @@ summary_table <- function(models,testdata, var_of_interest){
   
   sum_tab <- matrix(0,length(models),5)  
   
-  colnames(sum_tab) <- c("Methods", "Accuracy", "Kappa", "Sensitivity", "Specificity") 
+  colnames(sum_tab) <- c("Methods", "Accuracy", "Kappa", "Sensitivity", 
+                         "Specificity") 
   
   # Loop over all models
   
@@ -913,10 +873,10 @@ summary_table <- function(models,testdata, var_of_interest){
     # make a nice data table of the result
     
     sum_tab[i,1]<- models[[i]]$method
-    sum_tab[i,2]<- cm$overall[1]
-    sum_tab[i,3]<- cm$overall[2]
-    sum_tab[i,4]<- cm$byClass[1]
-    sum_tab[i,5]<- cm$byClass[2]
+    sum_tab[i,2]<- cm$overall[1] %>% round(3)
+    sum_tab[i,3]<- cm$overall[2] %>% round(3)
+    sum_tab[i,4]<- cm$byClass[1] %>% round(3)
+    sum_tab[i,5]<- cm$byClass[2] %>% round(3)
     
   }
   
@@ -928,23 +888,27 @@ summary_table <- function(models,testdata, var_of_interest){
 
 sum_table <- summary_table(models, model_test, model_test$Fake)
 
-kableExtra::kable(sum_table)
+kableExtra::kable(sum_table, booktabs = T)
 
 ```
 
-> Here we see that the GBM machine learning algorithm outperformed the other predictions. It also has a fairly high accuracy, albeit it is important to remember that this accuracy is very dependand on the fact that our test and trainig data comes from the same source. 
+\bigbreak
+
+Here we see that the GBM machine learning algorithm outperformed the other predictions. It also has a fairly high accuracy, albeit it is important to remember that this accuracy is very dependent on the fact that our test and training data comes from the same source. 
 
 \pagebreak
 
-### 5. Make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
+### 8. Make a shiny app, which will work as an interface to plug in new data and see if the news stories is true or fake. 
 
-```{r}
+The codes used for the shiny app can be found in a separate folder. However, the app is uploaded into shinyapps.io and can be found on the following link:
 
-#The app, along with its code, is included in a different file. 
+https://cirk88.shinyapps.io/fake_app/
 
-```
+\begin{center}
+Happy exploring!
+\end{center}
 
-### 6. Conclusions
+## Conclusions
 
-> After finishing the app, we ran the code with different articles to see how the results would look like if we tested the data against articles that were not included in the original dataset. As it is mentioned in the app itself, this code does not check the validity of the content, but instead it analyzes the formating of the text to see if it resembles the fake news included in our dataset. What this means, is that the same article can be called true or fake, depending on how we change small elements like punctuation or capital letters. Perhaps if we did a more in-depth research on keywords, and picked a more appropriate dictionary for the sentiment analysis our code would be able to more correctly guess the validity of true and fake news. As it stands, the app is a fun experiment, and it can be used to see if the formatting of an article resembles fake news or not. 
+After finishing the app, we ran the code with different articles to see how the results would look like if we tested the data against articles that were not included in the original dataset. As it is mentioned in the app itself, this code does not check the validity of the content, but instead it analyzes the formating of the text to see if it resembles the fake news included in our dataset. What this means, is that the same article can be called true or fake, depending on how we change small elements like punctuation or capital letters. Perhaps if we did a more in-depth research on keywords, and picked a more appropriate dictionary for the sentiment analysis our code would be able to more correctly guess the validity of true and fake news. As it stands, the app is a fun experiment, and it can be used to see if the formatting of an article resembles fake news or not. 
 
