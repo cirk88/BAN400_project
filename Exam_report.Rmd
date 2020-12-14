@@ -1,6 +1,6 @@
 ---
 title: "Group final project - BAN400 fall 2020 "
-author: "Candidate: 40 & .."
+author: "Candidate: 40 & 36"
 date: "15/12/2020"
 output:
   pdf_document:
@@ -292,7 +292,7 @@ Sys.time()-timestart->ptm  #checking how long it took the code to run
 
 saveRDS(sentiment, file = "sentiment.rds")
 
-?sentiment.fun
+
 
 ```
 
@@ -552,8 +552,6 @@ get.KWIC <- function(keyword,
   return(KWIC)
 
 }
-
-?get.KWIC
 
 ```
 
