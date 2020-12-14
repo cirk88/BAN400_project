@@ -1,7 +1,8 @@
 library(shiny)
-runApp() # To check if it runs locally
+runApp(appDir = "~/BAN400/BAN400_project/fake_app") # To check if it runs locally
 
-library(rsconnect)
-deployApp() # Deploy to shinyapps.io
+# library(rsconnect)
+# deployApp() # Deploy to shinyapps.io
 
-rm(list = ls())
+
+
