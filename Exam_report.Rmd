@@ -142,7 +142,7 @@ Prepossesing the data means removing most of the formatting. However, we will us
 # First we'd like to extract a few variables
 # which we might use on our predictive models
 
-DF <- DF %>% 
+DF <- DF %>%  #here we are counting space as a proxy for word count.  
   mutate(w_count.txt = str_count(paste(DF$text), " "),
          punct_count.txt = str_count(paste(DF$text), "[[:punct:]]"),
          upper_count.txt = str_count(paste(DF$text), "[[:upper:]]"),
@@ -390,7 +390,7 @@ Here we split our data into training and test. First, we set a seed so the test 
 
 ### 5. Visualizing the data
 
-Here we have the steps we took to see how our data actually looked like. Since this data is filled with so much text, we used a Key words in context table to see specific words in the context of where they appear. We also can visuallize the frequency of the words in a wordcloud, to better understand what is being most spoke on in our dataset. 
+Here we have the steps we took to see how our data actually looked like. Since this data is filled with so much text, we used a Key words in context table to see specific words in the context of where they appear. We also can visualize the frequency of the words in a wordcloud, to better understand what is being most spoke on in our dataset. 
 
 ```{r}
 
@@ -429,7 +429,7 @@ t.title_bigrams <- paste(unlist(t.train$bigram_title), collapse = " ") %>%
 
 **5.1 Visualizing the sentiment analysis**
 
-For the sentiment analysis, we decided to go with the sentiment dictionary: Loughran-McDonald Polarity Table. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. This dictoinary seemed to be the more neutral one, which made most sense to us. We found this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an filtered version of Loughran & McDonald's (2016) positive/negative financial word list as sentiment lookup values.*"
+For the sentiment analysis, we decided to go with the sentiment dictionary: Loughran-McDonald Polarity Table. We chose that dictionary after looking at the words present in our data, and checking them in the KWIC matrix to see them in context. This dictionary seemed to be the more neutral one which made most sense to us. We found this dictionary in the lexicon package, and its description goes as follows: "*A data.table dataset containing an filtered version of Loughran & McDonald's (2016) positive/negative financial word list as sentiment lookup values.*"
 
 
 ```{r}
@@ -830,7 +830,7 @@ plot(imp_lr)
 ```
 
 
-Here we can see how well our predictors performed in the logistic regression. It gives us a better understanding of how the data is shaped and what was most important on deciding if the news were fake or not. It seems like the formating of the data gives off most information. While the sentiment analysis, despite being statistically relevant, does not give much information. We removed variables that had too high importance, as we felt that that would fit our model too much to the format that our data came in. The reason was that during testing it on aticels online we found the variables for title to be to dominated. This way we manage to loosen the model and made it focus more on the text itself. 
+Here we can see how well our predictors performed in the logistic regression. It gives us a better understanding of how the data is shaped and what was most important on deciding if the news were fake or not. It seems like the formatting of the data gives off most information. While the sentiment analysis, despite being statistically relevant, does not give much information. We removed variables that had too high importance, despite it giving us a more accurate model. We did that since we felt that that would fit our model too much to the format that our data came in. We noticed this when testing a model with higher accuracy but variables with too high importance against articles we found online. Once we made any small changes on the dominating factors it would completely change the opinion of the model, and it made it feel less accurate. By removing those variables we manage to loosen the model and made it focus more on the text itself. 
 
 \newpage
 
@@ -884,7 +884,6 @@ summary_table <- function(models,testdata, var_of_interest){
   
 }
 
-?summary_table
 
 sum_table <- summary_table(models, model_test, model_test$Fake)
 
@@ -910,5 +909,5 @@ Happy exploring!
 
 ## Conclusions
 
-After finishing the app, we ran the code with different articles to see how the results would look like if we tested the data against articles that were not included in the original dataset. As it is mentioned in the app itself, this code does not check the validity of the content, but instead it analyzes the formating of the text to see if it resembles the fake news included in our dataset. What this means, is that the same article can be called true or fake, depending on how we change small elements like punctuation or capital letters. Perhaps if we did a more in-depth research on keywords, and picked a more appropriate dictionary for the sentiment analysis our code would be able to more correctly guess the validity of true and fake news. As it stands, the app is a fun experiment, and it can be used to see if the formatting of an article resembles fake news or not. 
+After finishing the app, we ran the code with different articles to see how the results would look like if we tested the data against articles that were not included in the original dataset. As it is mentioned in the app itself, this code does not check the validity of the content, but instead it analyzes the formatting of the text to see if it resembles the fake news included in our dataset. What this means, is that the same article can be called true or fake, depending on how we change small elements like punctuation or capital letters. Perhaps if we did a more in-depth research on keywords, and picked a more appropriate dictionary for the sentiment analysis our code would be able to more correctly guess the validity of true and fake news. As it stands, the app is a fun experiment, and it can be used to see if the formatting of an article resembles fake news or not. 
 
